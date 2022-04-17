@@ -9,8 +9,27 @@ const char *regs[] = {
 };
 
 void isa_reg_display() {
+  printf("reg\thex\t\t\tdec\n");
+  printf("pc\t0x%-16lx\t%ld\n",cpu.pc,cpu.pc);
+  for(int i=0; i<32; i++){
+    printf("%s\t0x%-16lx\t%ld\n",regs[i],gpr(i),gpr(i));
+  }
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
-  return 0;
+  int i=0;
+  if(strcmp(s,"pc")==0){
+    *success = true;
+    return cpu.pc;
+  }
+  for(i=0; i<ARRLEN(regs); i++){
+    if(strcmp(s,regs[i])==0){break;}
+  }
+  if(i<32){
+    *success = true;
+    return gpr(i);
+  }else{
+    *success = false;
+    return 0;
+  }
 }
