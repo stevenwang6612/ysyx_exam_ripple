@@ -1,23 +1,7 @@
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __DEBUG_H__
+#define __DEBUG_H__
 
-#include <common.h>
-
-// ----------- state -----------
-
-enum { NEMU_RUNNING, NEMU_STOP, NEMU_END, NEMU_ABORT, NEMU_QUIT };
-
-typedef struct {
-  int state;
-  vaddr_t halt_pc;
-  uint32_t halt_ret;
-} NEMUState;
-
-extern NEMUState nemu_state;
-
-// ----------- timer -----------
-
-uint64_t get_time();
+#include <stdio.h>
 
 // ----------- log -----------
 
@@ -59,5 +43,23 @@ uint64_t get_time();
     log_write(__VA_ARGS__); \
   } while (0)
 
+
+#define __FILENAME__ (strrchr(__FILE__, '/') ? (strrchr(__FILE__, '/') + 1):__FILE__)
+
+#define Log(format, ...) \
+    printf(ASNI_FMT("[%s:%d %s] " format, ASNI_FG_BLUE) "\n", \
+        __FILENAME__, __LINE__, __func__, ## __VA_ARGS__)
+
+#define Assert(cond, format, ...) \
+  do { \
+    if (!(cond)) { \
+      printf(ASNI_FMT(format, ASNI_FG_RED) "\n", ## __VA_ARGS__), \
+      assert(cond); \
+    } \
+  } while (0)
+
+#define panic(format, ...) Assert(0, format, ## __VA_ARGS__)
+
+#define TODO() panic("please implement me")
 
 #endif
