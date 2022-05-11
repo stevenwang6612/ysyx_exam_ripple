@@ -27,7 +27,7 @@ static char *wave_file = NULL;
 void init_Verilated(){
   top = new Vtop;
   svSetScope(svGetScopeFromName("TOP.top"));
-  top->clk = 1;
+  top->clk = 0;
   top->rst = 1;
   top->eval();
 }

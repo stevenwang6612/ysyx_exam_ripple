@@ -1,5 +1,6 @@
 #include <am.h>
 #include <SDL2/SDL.h>
+#include <stdio.h>
 
 #define KEYDOWN_MASK 0x8000
 
@@ -40,8 +41,10 @@ static int event_thread(void *args) {
 }
 
 void __am_input_init() {
+  SDL_Thread *thread;
   key_queue_lock = SDL_CreateMutex();
-  SDL_CreateThread(event_thread, "event thread", NULL);
+  thread = SDL_CreateThread(event_thread, "key", NULL);
+  if (!thread) SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_CreateThread failed: %s\n", SDL_GetError());
 }
 
 void __am_input_config(AM_INPUT_CONFIG_T *cfg) {

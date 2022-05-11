@@ -14,15 +14,15 @@
 #include <common.h>
 
 int main(int argc, char** argv, char** env) {
-  Verilated::commandArgs(argc, argv);
   init_Verilated();
 
-  init_monitor(0, argv);
+  init_monitor(argc, argv);
 
   sdb_mainloop();
 
   exit_Verilated();
-  return 0;
+
+  return !get_trap_flag();
 }
 
 //verilator -Wall --cc --exe --build --trace sim_main.cpp our.v

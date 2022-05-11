@@ -13,6 +13,7 @@
 =========================================================*/
 module ysyx_22040729_RegisterFile #(REGI_DEPTH = 32, DATA_WIDTH = 64) (
   input  clk,
+  input  rst,
   input  wen,
   input  [$clog2(REGI_DEPTH)-1:0] waddr,
   input  [$clog2(REGI_DEPTH)-1:0] raddr1,
@@ -23,15 +24,15 @@ module ysyx_22040729_RegisterFile #(REGI_DEPTH = 32, DATA_WIDTH = 64) (
 );
 reg [DATA_WIDTH-1:0] rf [REGI_DEPTH-1:0];
 
-always @(posedge clk) begin
-  rdata1 <= raddr1=='0 ? '0 : rf[raddr1];
+always @(*) begin
+  rdata1 = rst ? '0 : raddr1=='0 ? '0 : rf[raddr1];
+end
+
+always @(*) begin
+  rdata2 = rst ? '0 : raddr2=='0 ? '0 : rf[raddr2];
 end
 
 always @(posedge clk) begin
-  rdata2 <= raddr2=='0 ? '0 : rf[raddr2];
-end
-
-always @(posedge clk) begin
-  if (wen) rf[waddr] <= waddr=='0 ? '0 : wdata;
+  if (wen&!rst) rf[waddr] <= waddr=='0 ? '0 : wdata;
 end
 endmodule

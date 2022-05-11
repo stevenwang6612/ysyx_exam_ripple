@@ -25,16 +25,15 @@
 
 #define ASNI_FMT(str, fmt) fmt str ASNI_NONE
 
-#define log_write(...) IFDEF(CONFIG_TARGET_NATIVE_ELF, \
+#define log_write(...) \
   do { \
     extern FILE* log_fp; \
-    extern bool log_enable(); \
-    if (log_enable()) { \
+    if (log_fp) { \
       fprintf(log_fp, __VA_ARGS__); \
       fflush(log_fp); \
     } \
-  } while (0) \
-)
+  } while (0) 
+
 
 #define _Log(...) \
   do { \
@@ -47,7 +46,7 @@
 #define __FILENAME__ (strrchr(__FILE__, '/') ? (strrchr(__FILE__, '/') + 1):__FILE__)
 
 #define Log(format, ...) \
-    printf(ASNI_FMT("[%s:%d %s] " format, ASNI_FG_BLUE) "\n", \
+    _Log(ASNI_FMT("[%s:%d %s] " format, ASNI_FG_BLUE) "\n", \
         __FILENAME__, __LINE__, __func__, ## __VA_ARGS__)
 
 #define Assert(cond, format, ...) \

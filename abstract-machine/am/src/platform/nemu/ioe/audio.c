@@ -1,5 +1,6 @@
 #include <am.h>
 #include <nemu.h>
+#include <stdio.h>
 
 #define AUDIO_FREQ_ADDR      (AUDIO_ADDR + 0x00)
 #define AUDIO_CHANNELS_ADDR  (AUDIO_ADDR + 0x04)
@@ -12,15 +13,35 @@ void __am_audio_init() {
 }
 
 void __am_audio_config(AM_AUDIO_CONFIG_T *cfg) {
-  cfg->present = false;
+  cfg->present = true;
+  cfg->bufsize = inl(AUDIO_SBUF_SIZE_ADDR);
 }
 
-void __am_audio_ctrl(AM_AUDIO_CTRL_T *ctrl) {
+void __am_audio_ctrl(AM_AUDIO_CTRL_T *ctrl) {//freq,channels,samples
+  outl(AUDIO_FREQ_ADDR, ctrl->freq);
+  outl(AUDIO_CHANNELS_ADDR, ctrl->channels);
+  outl(AUDIO_SAMPLES_ADDR, ctrl->samples);
+  outl(AUDIO_INIT_ADDR, 1);
 }
 
 void __am_audio_status(AM_AUDIO_STATUS_T *stat) {
-  stat->count = 0;
+  stat->count = inl(AUDIO_COUNT_ADDR);
 }
 
-void __am_audio_play(AM_AUDIO_PLAY_T *ctl) {
+static volatile int sbuf_wp = 0;
+static uint8_t *sbuf = (uint8_t *)AUDIO_SBUF_ADDR;
+static volatile uint32_t *count = (uint32_t *)AUDIO_COUNT_ADDR;
+void __am_audio_play(AM_AUDIO_PLAY_T *ctl) {//Area
+  int len = ctl->buf.end - ctl->buf.start;
+  int sbuf_max = inl(AUDIO_SBUF_SIZE_ADDR);
+  int nwrite = 0;
+  uint8_t *buf = ctl->buf.start;
+  while(nwrite < len){
+    if(*count < sbuf_max){
+      sbuf[sbuf_wp] = buf[nwrite];
+      sbuf_wp = (sbuf_wp + 1) % sbuf_max;
+      nwrite++;
+      *count += 1;
+    }
+  }
 }

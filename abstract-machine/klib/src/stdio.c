@@ -17,7 +17,14 @@ static char * number(char * str, unsigned long long num, int base, int size, int
 
 
 int printf(const char *fmt, ...) {
-	panic("Not implemented");
+  char out[1024];
+  va_list ap;
+  int ret = -1;
+  va_start(ap, fmt);
+  ret = vsprintf(out, fmt, ap);
+  va_end(ap);
+  putstr(out);
+  return ret;
 }
 
 int vsprintf(char *out, const char *fmt, va_list ap) {

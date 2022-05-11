@@ -41,10 +41,11 @@ static char* rl_gets() {
 
 
 static int cmd_q(char *args){
+  statistic();
   return -1;
 }
 static int cmd_c(char *args){
-  execute(100);
+  execute(-1);
   return 0;
 }
 static int cmd_s(char *args);
@@ -170,17 +171,17 @@ static int cmd_x(char *args){
 
 static int cmd_r(char *args){
   top->rst = 1;
-  top->clk = 0;
-  top->eval();
-  Vtime++;
-  if(dump_wave_enable())
-    tfp->dump(Vtime);
   top->clk = 1;
   top->eval();
   Vtime++;
   if(dump_wave_enable())
     tfp->dump(Vtime);
+  top->clk = 0;
   top->rst = 0;
+  top->eval();
+  Vtime++;
+  if(dump_wave_enable())
+    tfp->dump(Vtime);
   return 0;
 }
 void sdb_mainloop() {

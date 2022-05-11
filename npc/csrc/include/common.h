@@ -8,6 +8,10 @@
 
 typedef uint64_t word_t;
 typedef uint64_t vaddr_t;
+typedef struct {
+  word_t gpr[32];
+  vaddr_t pc;
+} CPU_state;
 
 #include <monitor.h>
 #include <sdb.h>
