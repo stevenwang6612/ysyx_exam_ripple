@@ -20,6 +20,33 @@ bool get_trap_flag() {return trap_flag;}
 static uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static char log_buf[128];
+
+#define MAX_IRINGBUF 16
+static uint64_t iringbuf[MAX_IRINGBUF];
+static int iringbuf_ptr = 0;
+void display_iringbuf(){
+  int read_ptr = (iringbuf_ptr+1) % MAX_IRINGBUF;
+  uint64_t pc = 0;
+  char buf[128];
+  for(; read_ptr!=iringbuf_ptr; read_ptr=(read_ptr+1)%MAX_IRINGBUF){
+    char *p = buf;
+    pc = iringbuf[read_ptr];
+    p += snprintf(p, sizeof(buf),  "0x%016lx:", pc);
+    uint32_t inst = pc<0x80000000?0:(uint32_t)mem_read(pc);
+    p += sprintf(p, "  %08x", inst);
+    int ilen_max = 4;
+    int space_len = ilen_max - 4;
+    if (space_len < 0) space_len = 0;
+    space_len = space_len * 3 + 1;
+    memset(p, ' ', space_len);
+    p += space_len;
+
+    disassemble(p, buf + sizeof(buf) - p,
+        pc, (uint8_t *)&inst, 4);
+    printf("%s\n", buf);
+  }
+}
+
 uint64_t get_time() {
   struct timeval now;
   gettimeofday(&now, NULL);
@@ -35,6 +62,8 @@ void statistic() {
 void disasm(){
   char buf[32];
   uint64_t pc = getPC();
+  iringbuf[iringbuf_ptr] = pc;
+  iringbuf_ptr = (iringbuf_ptr + 1) % MAX_IRINGBUF;
   uint32_t instruction = getINST();
   disassemble(buf, sizeof(buf), pc, (uint8_t *)&instruction, 4);
   sprintf(log_buf, "0x%016lx: 0x%08x %s", pc, instruction, buf);
@@ -65,11 +94,13 @@ void execute(uint64_t n) {
     if(getINST()==0x00100073){
       trap_flag = gpr_read(10) == 0;
       Log("%s", trap_flag ? ASNI_FMT("HIT GOOD TRAP", ASNI_FG_GREEN) : ASNI_FMT("HIT BAD TRAP", ASNI_FG_RED));
+      if(!trap_flag) display_iringbuf();
       break;
     }
     if(!difftest_step()){
       printf("%s\n", log_buf);
       Log("%s", ASNI_FMT("ABORT: difftest error!", ASNI_FG_RED));
+      display_iringbuf();
       trap_flag = false;
       break;
     }

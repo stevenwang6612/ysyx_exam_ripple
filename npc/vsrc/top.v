@@ -18,7 +18,7 @@ module top(
 localparam DATA_WIDTH = 64;
 localparam INST_WIDTH = 32;
 localparam REG_ADDR_W = 5;
-localparam MEM_BDEPTH = 4096;
+localparam MEM_BDEPTH = 65536;
 localparam RESET_ADDR = 64'h80000000;
 
 

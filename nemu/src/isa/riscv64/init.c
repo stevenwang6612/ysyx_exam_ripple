@@ -19,9 +19,12 @@ static void restart() {
   cpu.gpr[0] = 0;
 }
 
+void init_reg();
 void init_isa() {
   /* Load built-in image. */
   memcpy(guest_to_host(RESET_VECTOR), img, sizeof(img));
+  
+  init_reg();
 
   /* Initialize this virtual computer system. */
   restart();

@@ -75,7 +75,6 @@ void init_monitor(int argc, char *argv[]) {
   /* Initialize memory. */
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = init_mem();
-
   /* Initialize devices. */
   //IFDEF(CONFIG_DEVICE, init_device());
 

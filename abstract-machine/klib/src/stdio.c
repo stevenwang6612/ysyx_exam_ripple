@@ -17,7 +17,7 @@ static char * number(char * str, unsigned long long num, int base, int size, int
 
 
 int printf(const char *fmt, ...) {
-  char out[1024];
+  char out[4096];
   va_list ap;
   int ret = -1;
   va_start(ap, fmt);

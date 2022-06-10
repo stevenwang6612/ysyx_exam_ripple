@@ -1,6 +1,7 @@
 #include <cpu/cpu.h>
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
+#include <memory/paddr.h>
 #include <locale.h>
 
 /* The assembly code of instructions executed is only output to the screen
@@ -9,17 +10,22 @@
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
+#define MAX_IRINGBUF 16
 
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
+#ifdef CONFIG_ITRACE
+static uint64_t iringbuf[MAX_IRINGBUF];
+static int iringbuf_ptr = 0;
+#endif
 
 void device_update();
 bool scan_wp();
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
-#ifdef CONFIG_ITRACE_COND
+#ifdef CONFIG_ITRACE
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
@@ -31,9 +37,39 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
 }
 
+void display_iringbuf(){
+#ifdef CONFIG_ITRACE
+  int read_ptr = (iringbuf_ptr+1) % MAX_IRINGBUF;
+  uint64_t pc = 0;
+  char buf[128];
+  for(; read_ptr!=iringbuf_ptr; read_ptr=(read_ptr+1)%MAX_IRINGBUF){
+    char *p = buf;
+    pc = iringbuf[read_ptr];
+    p += snprintf(p, sizeof(buf), FMT_WORD ":", pc);
+    uint32_t inst = pc<0x80000000?0:paddr_read(pc, 4);
+    p += sprintf(p, "  %08x", inst);
+    int ilen_max = MUXDEF(CONFIG_ISA_x86, 8, 4);
+    int space_len = ilen_max - 4;
+    if (space_len < 0) space_len = 0;
+    space_len = space_len * 3 + 1;
+    memset(p, ' ', space_len);
+    p += space_len;
+
+    void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+    disassemble(p, buf + sizeof(buf) - p,
+        pc, (uint8_t *)&inst, 4);
+    printf("%s\n", buf);
+  }
+#endif
+}
+
 static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
+#ifdef CONFIG_ITRACE
+  iringbuf[iringbuf_ptr] = pc;
+  iringbuf_ptr = (iringbuf_ptr + 1) % MAX_IRINGBUF;
+#endif
   isa_exec_once(s);
   cpu.pc = s->dnpc;
 #ifdef CONFIG_ITRACE
@@ -79,8 +115,9 @@ static void statistic() {
 }
 
 void assert_fail_msg() {
-  isa_reg_display();
+  //isa_reg_display();
   statistic();
+  //display_iringbuf();
 }
 
 /* Simulate how the CPU works. */
@@ -102,14 +139,15 @@ void cpu_exec(uint64_t n) {
 
   switch (nemu_state.state) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
-
-    case NEMU_END: case NEMU_ABORT:
-      Log("nemu: %s at pc = " FMT_WORD,
-          (nemu_state.state == NEMU_ABORT ? ASNI_FMT("ABORT", ASNI_FG_RED) :
-           (nemu_state.halt_ret == 0 ? ASNI_FMT("HIT GOOD TRAP", ASNI_FG_GREEN) :
-            ASNI_FMT("HIT BAD TRAP", ASNI_FG_RED))),
-          nemu_state.halt_pc);
-      // fall through
+    case NEMU_END: 
+    case NEMU_ABORT: 
+                       Log("nemu: %s at pc = " FMT_WORD,
+                           (nemu_state.state == NEMU_ABORT ? ASNI_FMT("ABORT", ASNI_FG_RED) :
+                            (nemu_state.halt_ret == 0 ? ASNI_FMT("HIT GOOD TRAP", ASNI_FG_GREEN) :
+                             ASNI_FMT("HIT BAD TRAP", ASNI_FG_RED))),
+                           nemu_state.halt_pc);
+                       // fall through
+                       if (nemu_state.state == NEMU_ABORT || nemu_state.halt_ret != 0 ) display_iringbuf();
     case NEMU_QUIT: statistic();
   }
 }

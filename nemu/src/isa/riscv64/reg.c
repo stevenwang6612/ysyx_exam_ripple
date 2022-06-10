@@ -8,6 +8,9 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
+void init_reg(){
+  cpu.csr[CSR_MSTATUS] = 0xa00001800;
+}
 void isa_reg_display() {
   printf("reg\thex\t\t\tdec\n");
   printf("pc\t0x%-16lx\t%ld\n",cpu.pc,cpu.pc);
