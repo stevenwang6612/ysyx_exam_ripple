@@ -86,11 +86,11 @@ assign mul_result = mul_src1 * mul_src2;
 //div
 wire [DATA_WIDTH-1:0] div_quo, div_rem, div_quo_temp, div_rem_temp, div_dividend, div_divisor;
 wire div_sign;
-ysyx_22040729_Divider #(DATA_WIDTH) divider_inst( 
-  .dividend (div_dividend),
-  .divisor  (div_divisor ),
-  .quo      (div_quo_temp),
-  .rem      (div_rem_temp)
+ysyx_22040729_Divider #(DATA_WIDTH, DATA_WIDTH) divider_inst( 
+  .dividend   (div_dividend),
+  .divisor    (div_divisor ),
+  .quotient   (div_quo_temp),
+  .remainders (div_rem_temp)
 );
 assign div_sign = !alu_func3[0];
 assign div_dividend = div_sign & src1[DATA_WIDTH-1] ? ~src1 + 1'b1 : src1;

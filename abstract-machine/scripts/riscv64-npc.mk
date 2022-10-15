@@ -18,8 +18,8 @@ CFLAGS += -DMAINARGS=\"$(mainargs)\"
 
 DIFF_SPIKE_SO = $(NEMU_HOME)/tools/spike-diff/build/riscv64-spike-so
 DIFF_NEMU_SO = $(NEMU_HOME)/build/riscv64-nemu-interpreter-so
-LOGFLAGS += -l $(shell dirname $(IMAGE).elf)/nemu-log.txt
-DIFFFLAGS += -d $(DIFF_NEMU_SO)
+LOGFLAGS += -l $(shell dirname $(IMAGE).elf)/npc-log.txt
+DIFFFLAGS = -d $(DIFF_NEMU_SO)
 
 image: $(IMAGE).elf
 	@$(OBJDUMP) -d $(IMAGE).elf > $(IMAGE).txt -M no-aliases
@@ -30,6 +30,9 @@ sdb: image
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(LOGFLAGS) -w -i $(IMAGE).bin"
 
 run: image
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) $(LOGFLAGS) -b -i $(IMAGE).bin"
+
+run_nd: image
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(LOGFLAGS) -b -i $(IMAGE).bin"
 
 gdb: image

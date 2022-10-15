@@ -4,9 +4,9 @@
 #
 # QQ : 935438447 
 #
-# Last modified: 2022-04-28 18:31
+# Last modified:	2022-09-08 16:01
 #
-# Filename: memory.c
+# Filename:		memory.cpp
 #
 # Description: 
 #
@@ -14,11 +14,12 @@
 #include <common.h>
 #include "verilated_dpi.h"
 
-#define IMEM_DEPTH 1024
+#define IMEM_DEPTH 0x10000000
 
 static char* image_file = NULL;
-uint8_t *imem_ptr = NULL;
+uint8_t imem_ptr[IMEM_DEPTH];
 uint64_t *gpr_ptr = NULL;
+extern bool difftest_skip;
 
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -27,8 +28,25 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
-extern "C" void set_mem_ptr(const svOpenArrayHandle r) {
-  imem_ptr = (uint8_t *)(((VerilatedDpiOpenVar*)r)->datap());
+extern "C" void pmem_read(long long raddr, long long *rdata){
+  if(raddr > RESET_VECTOR && raddr < RESET_VECTOR + IMEM_DEPTH){
+    *rdata = *(uint64_t *)(imem_ptr + raddr - RESET_VECTOR);
+  }else if(raddr >= DEVICE_BASE + 0x48 && raddr < DEVICE_BASE + 0x68){
+    update_rtc();
+    *rdata = read_rtc(raddr - DEVICE_BASE - 0x48);
+    difftest_skip = true;
+  }else *rdata = 0;
+}
+extern "C" void pmem_write(long long waddr, long long wdata, char wmask) {
+  if(waddr > RESET_VECTOR && waddr < RESET_VECTOR + IMEM_DEPTH){
+    uint8_t *wdata_byte = (uint8_t *)(&wdata);
+    for(int i=0; i<8; i++)
+      if(wmask>>i & 1)
+        imem_ptr[waddr - RESET_VECTOR + i] = *(wdata_byte + i);
+  }else if(waddr == DEVICE_BASE + 0x3f8 && wmask & 1){//uart
+    putchar((char)wdata);
+    difftest_skip = true;
+  }
 }
 
 extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {

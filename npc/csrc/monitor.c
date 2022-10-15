@@ -18,6 +18,7 @@
 
 FILE *log_fp = NULL;
 char *log_file = NULL;
+bool difftest_skip = false;
 static char *diff_so_file = NULL;
 static int difftest_port = 1234;
 
@@ -109,7 +110,7 @@ void (*ref_difftest_memcpy)(word_t addr, void *buf, size_t n, bool direction) = 
 void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
-extern uint8_t *imem_ptr;
+extern uint8_t imem_ptr[];
 
 static void init_difftest(long img_size) {
   if(diff_so_file == NULL){
@@ -174,7 +175,15 @@ static bool checkregs(CPU_state *ref_r) {
 }
 
 bool difftest_step() {
-  if(diff_so_file){
+  if(difftest_skip){
+    difftest_skip = false;
+    CPU_state dut;
+    dut.pc = getPC();
+    for(int i=0; i<32;i++)
+      dut.gpr[i] = gpr_read(i);
+    ref_difftest_regcpy(&dut, DIFFTEST_TO_REF);
+    return true;
+  }else if(diff_so_file){
     CPU_state ref_r;
     ref_difftest_exec(1);
     ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);

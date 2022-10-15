@@ -16,9 +16,9 @@ module top(
   input  rst
 );
 localparam DATA_WIDTH = 64;
+localparam ADDR_WIDTH = 64;
 localparam INST_WIDTH = 32;
 localparam REG_ADDR_W = 5;
-localparam MEM_BDEPTH = 65536;
 localparam RESET_ADDR = 64'h80000000;
 
 
@@ -57,29 +57,40 @@ function longint unsigned getPC();
 endfunction
 
 //memory
-import "DPI-C" function void set_mem_ptr(input reg [7:0] a []);
-initial set_mem_ptr(memory_inst.mem);
-wire [$clog2(MEM_BDEPTH)-1:0] imem_addr, mem_addr;
-wire [DATA_WIDTH-1:0] mem_rdata/*verilator split_var*/, mem_wdata, mem_rdata_temp, mem_wdata_temp;
-ysyx_22040729_Memory #(MEM_BDEPTH, INST_WIDTH, DATA_WIDTH) memory_inst (
-  .clk   (clk),
-  .rst   (rst),
-  .wen   (mem_wen),
-  .addr  (mem_addr),
-  .wdata (mem_wdata_temp),
-  .rdata (mem_rdata_temp),
-  .iaddr (imem_addr),
-  .irdata(instruction)
-);
-assign imem_addr = pc[$clog2(MEM_BDEPTH)-1:0] - RESET_ADDR[$clog2(MEM_BDEPTH)-1:0];
+import "DPI-C" function void pmem_read(input longint raddr, output longint rdata);
+import "DPI-C" function void pmem_write(input longint waddr, input longint wdata, input byte wmask);
+
+wire [ADDR_WIDTH-1:0] imem_addr, mem_addr;
+wire [DATA_WIDTH-1:0] mem_rdata/*verilator split_var*/, mem_wdata, mem_wdata_temp, instruction_temp;
+reg  [DATA_WIDTH-1:0] mem_rdata_temp;
+wire [7:0] mem_wmask;
+
+always @(rst or mem_wen or mem_addr or mem_wdata_temp) begin //r/w data
+  if (rst) begin
+    mem_rdata_temp = 0;
+  end else if (mem_wen) begin
+    pmem_write(mem_addr, mem_wdata_temp, mem_wmask);
+    mem_rdata_temp = 0;
+  end else begin
+    pmem_read(mem_addr, mem_rdata_temp);
+  end
+end
+always @(imem_addr) begin //fetch instruction
+  pmem_read(imem_addr, instruction_temp);
+end
+
+assign imem_addr = pc;
+assign instruction = instruction_temp[31:0];
 assign mem_rdata[7:0] = mem_rdata_temp[7:0];
 assign mem_rdata[15: 8] = alu_func3[1:0]==2'b00 ? alu_func3[2] ? '0 : { 8{mem_rdata[ 7]}} : mem_rdata_temp[15: 8];
 assign mem_rdata[31:16] = alu_func3[1]==1'b0    ? alu_func3[2] ? '0 : {16{mem_rdata[15]}} : mem_rdata_temp[31:16];
 assign mem_rdata[63:32] = alu_func3[1:0]!=2'b11 ? alu_func3[2] ? '0 : {32{mem_rdata[31]}} : mem_rdata_temp[63:32];
-assign mem_wdata_temp[7:0] = mem_wdata[7:0];
-assign mem_wdata_temp[15: 8] = alu_func3[1:0]==2'b00 ? {mem_rdata_temp[15: 8]} : mem_wdata[15: 8];
-assign mem_wdata_temp[31:16] = alu_func3[1]==1'b0    ? {mem_rdata_temp[31:16]} : mem_wdata[31:16];
-assign mem_wdata_temp[63:32] = alu_func3[1:0]!=2'b11 ? {mem_rdata_temp[63:32]} : mem_wdata[63:32];
+assign mem_wdata_temp = mem_wdata;
+assign mem_wmask[0] = 1'b1;
+assign mem_wmask[1] = alu_func3[1:0]==2'b00 ? '0 : 1'b1;
+assign mem_wmask[3:2] = alu_func3[1]==1'b0    ? '0 : '1;
+assign mem_wmask[7:4] = alu_func3[1:0]!=2'b11 ? '0 : '1;
+
 
 //RegFile
 import "DPI-C" function void set_gpr_ptr(input reg [63:0] a []);
@@ -123,7 +134,7 @@ assign rf_wdata = rf_wdata_src == 2'b00 ? ALU_result :
                   rf_wdata_src == 2'b01 ? mem_rdata  :
                   rf_wdata_src == 2'b10 ? immediate  :
                   |npc_src ? snpc : dnpc ;
-assign mem_addr = ALU_result[$clog2(MEM_BDEPTH)-1:0];
+assign mem_addr = ALU_result;
 assign anpc = ALU_result;
 assign bnpc = ALU_result[0] ? dnpc : snpc;
 

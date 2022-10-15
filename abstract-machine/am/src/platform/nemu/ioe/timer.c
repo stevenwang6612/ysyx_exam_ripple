@@ -1,5 +1,6 @@
 #include <am.h>
 #include <nemu.h>
+#include <time.h>
 
 void __am_timer_init() {
 }
@@ -15,4 +16,14 @@ void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
   rtc->day    = 0;
   rtc->month  = 0;
   rtc->year   = 1900;
+  //  time_t now;
+  //  struct tm *tm_now;
+  //  time(&now);
+  //  tm_now = localtime(&now);
+  //  rtc->second = tm_now->tm_sec;
+  //  rtc->minute = tm_now->tm_min;
+  //  rtc->hour   = tm_now->tm_hour;
+  //  rtc->day    = tm_now->tm_mday;
+  //  rtc->month  = 1 + tm_now->tm_mon;
+  //  rtc->year   = 1900 + tm_now->tm_year;
 }

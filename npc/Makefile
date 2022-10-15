@@ -45,7 +45,7 @@ default: $(BIN)
 
 run: $(BIN)
 	$(call git_commit, "compile RTL") # DO NOT REMOVE THIS LINE!!!
-	$(BIN) $(DIFF_NEMU_SO) $(ARGS)
+	$(BIN) $(ARGS)
 
 $(WAVE): $(BIN)
 	@./build/$(TOPNAME) -w

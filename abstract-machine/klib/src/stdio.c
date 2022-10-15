@@ -42,7 +42,9 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
 			*str++ = *fmt;
 			continue;
 		}
-		while(1){
+		flags = 0;
+    base = 10;
+    while(1){
 			fmt++;
 			switch (*fmt){		
 				case '-': flags |= LEFT; continue;
