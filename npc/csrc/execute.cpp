@@ -104,6 +104,9 @@ void execute(uint64_t n) {
       trap_flag = false;
       break;
     }
+    if(scan_wp()){
+      break;
+    }
   }
 }
 

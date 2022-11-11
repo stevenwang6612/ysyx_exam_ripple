@@ -1,4 +1,4 @@
-module ysyx_22040729_Divider#(
+module ysyx_22040729_ALU_Divider#(
 	 parameter	DIVISOR_WIDTH		= 32
 	,parameter	DIVIDEND_WIDTH		= 32
 )(

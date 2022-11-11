@@ -48,3 +48,8 @@ void update_rtc(){
 uint64_t read_rtc(long long addr){
   return *(uint64_t*)(rtc + (addr<32&addr>=0?addr:32));
 }
+
+void init_device(){
+  if (boot_time == 0) boot_time = get_time_internal();
+}
+

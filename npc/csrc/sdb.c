@@ -70,8 +70,8 @@ static struct {
   { "s", "Step N instructions", cmd_s },
   { "x", "Scan memory in hexadecimal", cmd_x },
   { "p", "Expression Evaluation" ,cmd_p },
-  //{ "w", "Set watchpoint" ,cmd_w },
-  //{ "d", "Delete watchpoint" ,cmd_d },
+  { "w", "Set watchpoint" ,cmd_w },
+  { "d", "Delete watchpoint" ,cmd_d },
   { "q", "Exit NEMU", cmd_q },
   /* TODO: Add more commands */
 
@@ -108,7 +108,7 @@ static int cmd_info(char *args){
   }else if(*args=='r'){
     isa_reg_display();
   }else if(*args=='w'){
-    //info_wp();
+    info_wp();
   }else{
     printf("invalid argument! you can try 'w' or 'r'~\n");
   }
@@ -167,7 +167,35 @@ static int cmd_x(char *args){
   }
   return 0;
 }
+static int cmd_w(char *args){
+  if(args == NULL){
+    printf("Please input expression!\n");
+  }
+  int flag = new_wp(args);
+  if(flag==-1){
+    printf("the free watchpoing pool is empty, please retry after deleting some watchpoints\n");
+  }else if(flag==-2){
+    printf("Invalid expression : '%s'\n", args);
+  }else{
+    printf("watchpoint %d: %s has been set\n", flag, args);
+  }
+  return 0;
+}
 
+static int cmd_d(char *args){
+  if(args == NULL){
+    printf("Please input :(NO) or (expression)!\n");
+  }
+  int flag = free_wp(args);
+  if(flag==-1){
+    printf("the used watchpoing pool is empty, please retry after setting some watchpoints\n");
+  }else if(flag==-2){
+    printf("Not found the watchpoint~\n");
+  }else{
+    printf("watchpoint %d: %s has been deleted\n", flag, args);
+  }
+  return 0;
+}
 
 static int cmd_r(char *args){
   top->rst = 1;
@@ -224,7 +252,7 @@ void init_sdb() {
   init_regex();
 
   /* Initialize the watchpoint pool. */
-  //init_wp_pool();
+  init_wp_pool();
 }
 
 

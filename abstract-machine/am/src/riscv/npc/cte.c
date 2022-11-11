@@ -1,12 +1,20 @@
 #include <am.h>
+#include <riscv/riscv.h>
 #include <klib.h>
 
 static Context* (*user_handler)(Event, Context*) = NULL;
 
 Context* __am_irq_handle(Context *c) {
-  if (user_handler) {
+  if(user_handler) {
     Event ev = {0};
     switch (c->mcause) {
+      case 0xb: ev.event = c->GPR1==-1?EVENT_YIELD:EVENT_SYSCALL;
+                c->mepc += 4;
+                break;
+      case 0xc: ev.event = EVENT_PAGEFAULT; break;
+      case 0x8000000000000003: ev.event = EVENT_SYSCALL; break;
+      case 0x8000000000000007: ev.event = EVENT_IRQ_TIMER; break;
+      case 0x800000000000000b: ev.event = EVENT_IRQ_IODEV; break;
       default: ev.event = EVENT_ERROR; break;
     }
 
@@ -38,8 +46,15 @@ void yield() {
 }
 
 bool ienabled() {
-  return false;
+  int mstatus = 0;
+  asm volatile("csrr %0, mstatus" : "=r"(mstatus));
+  return mstatus|0x8;
 }
 
 void iset(bool enable) {
+  if(enable){
+    asm volatile("csrs  mstatus, 0x8");
+  }else{
+    asm volatile("csrc  mstatus, 0x8");
+  }
 }

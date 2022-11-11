@@ -18,7 +18,8 @@ CFLAGS += -DMAINARGS=\"$(mainargs)\"
 
 DIFF_SPIKE_SO = $(NEMU_HOME)/tools/spike-diff/build/riscv64-spike-so
 DIFF_NEMU_SO = $(NEMU_HOME)/build/riscv64-nemu-interpreter-so
-LOGFLAGS += -l $(shell dirname $(IMAGE).elf)/npc-log.txt
+LOGFLAGS = -l $(shell dirname $(IMAGE).elf)/npc-log.txt
+WAVFLAGS = -w$(shell dirname $(IMAGE).elf)/wave.vcd
 DIFFFLAGS = -d $(DIFF_NEMU_SO)
 
 image: $(IMAGE).elf
@@ -27,12 +28,15 @@ image: $(IMAGE).elf
 	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
 
 sdb: image
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(LOGFLAGS) -w -i $(IMAGE).bin"
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(LOGFLAGS) -i $(IMAGE).bin"
 
 run: image
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) $(LOGFLAGS) -b -i $(IMAGE).bin"
 
-run_nd: image
+wave: image
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) $(WAVFLAGS) $(LOGFLAGS) -b -i $(IMAGE).bin"
+
+run_fast: image
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(LOGFLAGS) -b -i $(IMAGE).bin"
 
 gdb: image

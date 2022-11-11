@@ -3,16 +3,127 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect) {
   assert(dst && src);
   assert(dst->format->BitsPerPixel == src->format->BitsPerPixel);
+  int w, h, x_src, y_src, x_dst, y_dst;
+
+  // 如果srcrect不为NULL
+  if (srcrect) {
+    // 矩形的wh来自srcrect
+    w = srcrect->w; h = srcrect->h;
+    // 矩形的源xy来自srcrect
+    x_src = srcrect->x; y_src = srcrect->y; 
+  }
+  // 如果srcrect为NULL
+  else {
+    // 矩形的wh就是整个画布的wh
+    w = src->w; h = src->h;
+    // 矩形的src就是0,0
+    x_src = 0; y_src = 0;
+  }
+
+  // 如果dstrect不为NULL
+  if (dstrect) {
+    // 矩形的dst为dstrect的xy
+    x_dst = dstrect->x, y_dst = dstrect->y;
+  }
+  // 如果dstrect为NULL
+  else {
+    // 矩形的dst为0,0
+    x_dst = 0; y_dst = 0;
+  }
+
+  if (src->format->BitsPerPixel == 32) {
+    uint32_t* pixels_src = (uint32_t*)src->pixels;
+    uint32_t* pixels_dst = (uint32_t*)dst->pixels;
+    for (int i = 0; i < h; ++ i)
+      for (int j = 0; j < w; ++ j)
+        pixels_dst[(y_dst + i) * dst->w + x_dst + j] = pixels_src[(y_src + i) * src->w + x_src + j];
+  }
+  else if (src->format->BitsPerPixel == 8) {
+    uint8_t* pixels_src = (uint8_t*)src->pixels;
+    uint8_t* pixels_dst = (uint8_t*)dst->pixels;
+    for (int i = 0; i < h; ++ i)
+      for (int j = 0; j < w; ++ j)
+        pixels_dst[(y_dst + i) * dst->w + x_dst + j] = pixels_src[(y_src + i) * src->w + x_src + j];
+  }
+  else {
+    printf("[SDL_BlitSurface] Unimplemented format.\n");
+    assert(0);
+  }
 }
 
 void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
+  assert(dst != NULL);
+  uint32_t *pixels = (uint32_t *)dst->pixels;
+  int x, y, w, h;
+
+  if (dstrect == NULL) {
+    x = 0;
+    y = 0;
+    w = dst->w;
+    h = dst->h;
+  }else {
+    x = dstrect->x;
+    y = dstrect->y;
+    w = dstrect->w;
+    h = dstrect->h;
+  }
+  for (int i = 0; i < h; ++ i)
+    for (int j = 0; j < w; ++ j)
+      pixels[(y + i) * dst->w + (x + j)] = color;
 }
 
 void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
+  assert(s != NULL);
+  //printf("%d %d\n", s->w, s->h);
+  // 全零则全画布更新
+  if (x == 0 && y == 0 && w == 0 && h == 0) {
+    w = s->w;
+    h = s->h;
+  }
+
+  // 初始化内存空间用于储存转换后的数据
+  uint32_t *pixels = malloc(w * h * sizeof(uint32_t));
+  assert(pixels);
+
+  // ARGB各8比特
+  // Pixel formats above 8-bit are an entirely different experience.
+  // They are considered to be "TrueColor" formats and the color information is stored in the pixels themselves,
+  //   not in a palette.
+  if (s->format->BitsPerPixel == 32) {
+    uint32_t *src = (uint32_t *)s->pixels;
+    for (int i = 0; i < h; ++ i)
+      for (int j = 0; j < w; ++ j)
+        pixels[i * w + j] = src[i * s->w + j];
+
+    NDL_DrawRect(pixels, x, y, w, h);
+  }
+
+  // ARGB各占2bit，且实际存储的是索引值，需要调用palette调色盘
+  // SDL_PixelFormat中有实际的解读代码样例
+  // All pixels are represented by a Uint8 which contains an index into palette->colors.
+  else if (s->format->BitsPerPixel == 8) {
+    uint8_t *index = (uint8_t *)s->pixels;
+    SDL_Color *color;
+
+    for (int i = 0; i < h; ++ i) 
+      for (int j = 0; j < w; ++ j) {
+        color = &s->format->palette->colors[index[(y + i) * s->w + x + j]];
+        pixels[i * w + j] = ((color->a << 24) | (color->r << 16) | (color->g << 8) | color->b);
+      }
+
+    NDL_DrawRect(pixels, x, y, w, h);
+  }
+  else {
+    printf("[SDL_UpdateRect] Unimplemented format.\n");
+    assert(0);
+  }
+
+  if (pixels) free(pixels);
 }
 
 // APIs below are already implemented.
@@ -176,7 +287,7 @@ SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, SDL_PixelFormat *fmt, uint32_t
   assert(src->format->BitsPerPixel == fmt->BitsPerPixel);
 
   SDL_Surface* ret = SDL_CreateRGBSurface(flags, src->w, src->h, fmt->BitsPerPixel,
-    fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
+      fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
 
   assert(fmt->Gmask == src->format->Gmask);
   assert(fmt->Amask == 0 || src->format->Amask == 0 || (fmt->Amask == src->format->Amask));

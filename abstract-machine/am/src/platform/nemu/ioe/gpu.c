@@ -1,5 +1,6 @@
 #include <am.h>
 #include <nemu.h>
+#include <string.h>
 
 #define SYNC_ADDR (VGACTL_ADDR + 4)
 
@@ -39,3 +40,12 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
 void __am_gpu_status(AM_GPU_STATUS_T *status) {
   status->ready = true;
 }
+
+void __am_gpu_memcpy(AM_GPU_MEMCPY_T *cpy){
+  uint8_t *dst = (uint8_t *)(uintptr_t)FB_ADDR;
+  dst += cpy->dest;
+  uint8_t *src = (uint8_t *)cpy->src;
+  memcpy(dst, src, cpy->size);
+  outl(SYNC_ADDR, 1);
+}
+

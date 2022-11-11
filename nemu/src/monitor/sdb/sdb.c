@@ -196,8 +196,9 @@ static int cmd_w(char *args){
   int flag = new_wp(args);
   if(flag==-1){
     printf("the free watchpoing pool is empty, please retry after deleting some watchpoints\n");
-  }
-  else{
+  }else if(flag==-2){
+    printf("Invalid expression : '%s'\n", args);
+  }else{
     printf("watchpoint %d: %s has been set\n", flag, args);
   }
   return 0;

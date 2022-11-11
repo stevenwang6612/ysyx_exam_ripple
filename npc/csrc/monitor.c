@@ -19,6 +19,7 @@
 FILE *log_fp = NULL;
 char *log_file = NULL;
 bool difftest_skip = false;
+bool difftest_skiped = false;
 static char *diff_so_file = NULL;
 static int difftest_port = 1234;
 
@@ -77,7 +78,7 @@ void init_monitor(int argc, char *argv[]) {
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = init_mem();
   /* Initialize devices. */
-  //IFDEF(CONFIG_DEVICE, init_device());
+  init_device();
 
   /* Initialize dump wave file. */
   init_wave();
@@ -175,21 +176,27 @@ static bool checkregs(CPU_state *ref_r) {
 }
 
 bool difftest_step() {
-  if(difftest_skip){
-    difftest_skip = false;
+  bool ret;
+  if(difftest_skiped && diff_so_file){
+    difftest_skiped = false;
     CPU_state dut;
     dut.pc = getPC();
-    for(int i=0; i<32;i++)
+    for(int i=0; i<32; i++)
       dut.gpr[i] = gpr_read(i);
     ref_difftest_regcpy(&dut, DIFFTEST_TO_REF);
-    return true;
+    ret = true;
   }else if(diff_so_file){
     CPU_state ref_r;
     ref_difftest_exec(1);
     ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
-    return checkregs(&ref_r);
+    ret = checkregs(&ref_r);
   }else{
-    return true;
+    ret = true;
   }
+  if(difftest_skip){
+    difftest_skip = false;
+    difftest_skiped = true;
+  }
+  return ret;
 }
 

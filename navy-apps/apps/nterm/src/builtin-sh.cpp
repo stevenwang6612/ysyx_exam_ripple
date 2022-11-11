@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <SDL.h>
+#include <fcntl.h>
 
 char handle_key(SDL_Event *ev);
 
@@ -23,9 +24,17 @@ static void sh_prompt() {
 }
 
 static void sh_handle_cmd(const char *cmd) {
+  char buf[128];
+  strcpy(buf, cmd);
+  char *filename = strtok(buf, " \n");
+  if(!filename) return;
+  if(execvp(filename, 0)==-1)
+    sh_printf("Command \"%s\" not found!\n", filename);
 }
 
 void builtin_sh_run() {
+  setenv("PATH", "/bin", 0);
+
   sh_banner();
   sh_prompt();
 
@@ -35,6 +44,7 @@ void builtin_sh_run() {
       if (ev.type == SDL_KEYUP || ev.type == SDL_KEYDOWN) {
         const char *res = term->keypress(handle_key(&ev));
         if (res) {
+          if(strcmp(res, "exit\n")==0) return;
           sh_handle_cmd(res);
           sh_prompt();
         }

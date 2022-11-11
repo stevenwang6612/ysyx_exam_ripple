@@ -58,12 +58,13 @@ wire [DATA_WIDTH-1:0] xor_result;
 assign xor_result = src1 ^ src2;
 
 //srl(a)
-wire [DATA_WIDTH-1:0] srla_result, srl_result, sra_result;
-wire [DATA_WIDTH/2-1:0] srlw_result, sraw_result;
-assign srlw_result = src1[DATA_WIDTH/2-1:0] >> src2[5:0];
-assign sraw_result = $signed(src1[DATA_WIDTH/2-1:0]) >>> src2[5:0];
-assign srl_result = alu_len_dw ? {{DATA_WIDTH/2{1'b0}}, srlw_result} : src1 >> src2[5:0];
-assign sra_result = alu_len_dw ? {{DATA_WIDTH/2{1'b0}}, sraw_result} : $signed(src1) >>> src2[5:0];
+wire [DATA_WIDTH-1:0] srla_result, srl_result, sra_result, srl_result_t, sra_result_t, sraw_result_t, eff_mask;
+assign eff_mask = {DATA_WIDTH{1'b1}} >> src2[5:0];
+assign srl_result_t = src1 >> src2[5:0];
+assign sra_result_t = (srl_result & eff_mask) | ({DATA_WIDTH{src1[DATA_WIDTH-1]}} & (~eff_mask));
+assign sraw_result_t = (srl_result & eff_mask) | ({DATA_WIDTH{src1[DATA_WIDTH/2-1]}} & (~eff_mask));
+assign srl_result = alu_len_dw ? {{DATA_WIDTH/2{1'b0}}, srl_result_t[DATA_WIDTH/2-1:0]} : srl_result_t;
+assign sra_result = alu_len_dw ? {{DATA_WIDTH/2{1'b0}}, sraw_result_t[DATA_WIDTH/2-1:0]} : sra_result_t;
 assign srla_result = alu_func7[5] ? sra_result : srl_result;
 
 //or
@@ -86,7 +87,7 @@ assign mul_result = mul_src1 * mul_src2;
 //div
 wire [DATA_WIDTH-1:0] div_quo, div_rem, div_quo_temp, div_rem_temp, div_dividend, div_divisor;
 wire div_sign;
-ysyx_22040729_Divider #(DATA_WIDTH, DATA_WIDTH) divider_inst( 
+ysyx_22040729_ALU_Divider #(DATA_WIDTH, DATA_WIDTH) divider_inst( 
   .dividend   (div_dividend),
   .divisor    (div_divisor ),
   .quotient   (div_quo_temp),

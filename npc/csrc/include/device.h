@@ -5,6 +5,7 @@
 
 void update_rtc();
 uint64_t read_rtc(long long addr);
+void init_device();
 
 
 #endif
