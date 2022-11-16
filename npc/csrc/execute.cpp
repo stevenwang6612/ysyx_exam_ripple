@@ -13,6 +13,8 @@
 =========================================================*/
 #include <common.h>
 #include <sys/time.h>
+#include "axi4_mem.hpp"
+#include "axi4.hpp"
 
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 static bool trap_flag = true;
@@ -20,6 +22,11 @@ bool get_trap_flag() {return trap_flag;}
 static uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static char log_buf[128];
+
+axi4<64,64,4> mem_sigs;
+axi4_ref<64,64,4> mem_sigs_ref(mem_sigs);
+extern axi4_mem<64,64,4> mem;
+extern axi4_ref<64,64,4>* mem_ref;
 
 #define MAX_IRINGBUF 16
 static uint64_t iringbuf[MAX_IRINGBUF];
@@ -71,16 +78,21 @@ void disasm(){
 }
 
 static void exec_once() {
-  top->clk = 1;
-  top->eval();
-  Vtime++;
-  if(dump_wave_enable())
-    tfp->dump(Vtime);
-  top->clk = 0;
-  top->eval();
-  Vtime++;
-  if(dump_wave_enable())
-    tfp->dump(Vtime);
+  do{
+    top->clk = 1;
+    mem_sigs.update_input(*mem_ref);
+    top->eval();
+    mem.beat(mem_sigs_ref);
+    mem_sigs.update_output(*mem_ref);
+    Vtime++;
+    if(dump_wave_enable())
+      tfp->dump(Vtime);
+    top->clk = 0;
+    top->eval();
+    Vtime++;
+    if(dump_wave_enable())
+      tfp->dump(Vtime);
+  }while(!top->exec_once);
 }
 
 void execute(uint64_t n) {

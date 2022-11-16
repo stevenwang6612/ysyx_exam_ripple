@@ -59,6 +59,7 @@ gtkwave: $(WAVE)
 
 sim: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
+	$(BIN) $(ARGS) -b
 	@make wave
 
 count:

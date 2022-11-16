@@ -13,6 +13,8 @@
 =========================================================*/
 #include <common.h>
 #include "verilated_dpi.h"
+#include "axi4_mem.hpp"
+#include "axi4.hpp"
 
 #define IMEM_DEPTH 0x10000000
 
@@ -21,6 +23,9 @@ uint8_t imem_ptr[IMEM_DEPTH];
 uint64_t *gpr_ptr = NULL;
 extern bool difftest_skip;
 extern bool difftest_skiped;
+axi4_mem<64,64,4> mem(0x100000000l);
+axi4_ref<64,64,4>* mem_ref;
+
 
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -66,6 +71,43 @@ extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   gpr_ptr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
 }
 
+static void connect_wire(axi4_ptr <64,64,4> &axi4_ptr, Vtop *top) {
+    // aw   
+    axi4_ptr.awaddr     = &(top->axi_aw_addr_o);
+    axi4_ptr.awburst    = &(top->axi_aw_burst_o);
+    axi4_ptr.awid       = &(top->axi_aw_id_o);
+    axi4_ptr.awlen      = &(top->axi_aw_len_o);
+    axi4_ptr.awready    = &(top->axi_aw_ready_i);
+    axi4_ptr.awsize     = &(top->axi_aw_size_o);
+    axi4_ptr.awvalid    = &(top->axi_aw_valid_o);
+    // w
+    axi4_ptr.wdata      = &(top->axi_w_data_o);
+    axi4_ptr.wlast      = &(top->axi_w_last_o);
+    axi4_ptr.wready     = &(top->axi_w_ready_i);
+    axi4_ptr.wstrb      = &(top->axi_w_strb_o);
+    axi4_ptr.wvalid     = &(top->axi_w_valid_o);
+    // b
+    axi4_ptr.bid        = &(top->axi_b_id_i);
+    axi4_ptr.bready     = &(top->axi_b_ready_o);
+    axi4_ptr.bresp      = &(top->axi_b_resp_i);
+    axi4_ptr.bvalid     = &(top->axi_b_valid_i);
+    // ar
+    axi4_ptr.araddr     = &(top->axi_ar_addr_o);
+    axi4_ptr.arburst    = &(top->axi_ar_burst_o);
+    axi4_ptr.arid       = &(top->axi_ar_id_o);
+    axi4_ptr.arlen      = &(top->axi_ar_len_o);
+    axi4_ptr.arready    = &(top->axi_ar_ready_i);
+    axi4_ptr.arsize     = &(top->axi_ar_size_o);
+    axi4_ptr.arvalid    = &(top->axi_ar_valid_o);
+    // r
+    axi4_ptr.rdata      = &(top->axi_r_data_i);
+    axi4_ptr.rid        = &(top->axi_r_id_i);
+    axi4_ptr.rlast      = &(top->axi_r_last_i);
+    axi4_ptr.rready     = &(top->axi_r_ready_o);
+    axi4_ptr.rresp      = &(top->axi_r_resp_i);
+    axi4_ptr.rvalid     = &(top->axi_r_valid_i);
+}
+
 void set_image_file(char* file){
   image_file = file;
 }
@@ -87,6 +129,12 @@ long init_mem(){
   assert(ret == 1);
 
   fclose(fp);
+  mem.load_binary(image_file, RESET_VECTOR);
+  extern Vtop *top;
+  axi4_ptr<64,64,4> mem_ptr;
+  connect_wire(mem_ptr, top);
+  assert(mem_ptr.check());
+  mem_ref = new axi4_ref<64,64,4>(mem_ptr);
   return size;
 }
 
