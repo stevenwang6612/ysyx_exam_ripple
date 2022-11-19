@@ -11,7 +11,7 @@
 # Description: 
 #
 =========================================================*/
-module ysyx_22040729_Decoder #(INST_WIDTH = 32, DATA_WIDTH = 64) (
+module ysyx_040729_Decoder #(INST_WIDTH = 32, DATA_WIDTH = 64) (
   input  [INST_WIDTH-1:0] instruction,
 
   output ecall,

@@ -11,7 +11,7 @@
 # Description: Memory 
 #
 =========================================================*/
-module ysyx_22040729_Memory #(DATA_DEPTH = 1,INST_WIDTH = 32, DATA_WIDTH = 64)(
+module ysyx_040729_Memory #(DATA_DEPTH = 1,INST_WIDTH = 32, DATA_WIDTH = 64)(
   input  clk,
   input  rst,
   input  wen,

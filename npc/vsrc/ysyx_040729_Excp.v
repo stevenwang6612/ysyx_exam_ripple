@@ -1,4 +1,4 @@
-module ysyx_22040729_Excp #(DATA_WIDTH = 64)(
+module ysyx_040729_Excp #(DATA_WIDTH = 64)(
     input  ext_irq,
     input  tmr_irq,
     input  ecall,

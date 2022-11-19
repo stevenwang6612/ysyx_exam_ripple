@@ -198,14 +198,14 @@ static int cmd_d(char *args){
 }
 
 static int cmd_r(char *args){
-  top->rst = 1;
-  top->clk = 1;
+  top->reset = 1;
+  top->clock = 1;
   top->eval();
   Vtime++;
   if(dump_wave_enable())
     tfp->dump(Vtime);
-  top->clk = 0;
-  top->rst = 0;
+  top->clock = 0;
+  top->reset = 0;
   top->eval();
   Vtime++;
   if(dump_wave_enable())

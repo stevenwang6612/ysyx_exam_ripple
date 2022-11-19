@@ -11,7 +11,7 @@
 # Description: 
 #
 =========================================================*/
-module ysyx_22040729_ALU #(DATA_WIDTH = 64)(
+module ysyx_040729_ALU #(DATA_WIDTH = 64)(
   input  [DATA_WIDTH-1:0] src1,
   input  [DATA_WIDTH-1:0] src2,
   input  [2:0] alu_func3,
@@ -87,7 +87,7 @@ assign mul_result = mul_src1 * mul_src2;
 //div
 wire [DATA_WIDTH-1:0] div_quo, div_rem, div_quo_temp, div_rem_temp, div_dividend, div_divisor;
 wire div_sign;
-ysyx_22040729_ALU_Divider #(DATA_WIDTH, DATA_WIDTH) divider_inst( 
+ysyx_040729_ALU_Divider #(DATA_WIDTH, DATA_WIDTH) divider_inst( 
   .dividend   (div_dividend),
   .divisor    (div_divisor ),
   .quotient   (div_quo_temp),

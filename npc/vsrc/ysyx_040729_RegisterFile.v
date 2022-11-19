@@ -11,7 +11,7 @@
 # Description: RegisterFile
 #
 =========================================================*/
-module ysyx_22040729_RegisterFile #(REGI_DEPTH = 32, DATA_WIDTH = 64) (
+module ysyx_040729_RegisterFile #(REGI_DEPTH = 32, DATA_WIDTH = 64) (
   input  clk,
   input  rst,
   input  wen,

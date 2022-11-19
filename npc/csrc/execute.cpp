@@ -23,10 +23,10 @@ static uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static char log_buf[128];
 
-axi4<64,64,4> mem_sigs;
-axi4_ref<64,64,4> mem_sigs_ref(mem_sigs);
-extern axi4_mem<64,64,4> mem;
-extern axi4_ref<64,64,4>* mem_ref;
+axi4<32,64,4> mem_sigs;
+axi4_ref<32,64,4> mem_sigs_ref(mem_sigs);
+extern axi4_mem<32,64,4> mem;
+extern axi4_ref<32,64,4>* mem_ref;
 
 #define MAX_IRINGBUF 16
 static uint64_t iringbuf[MAX_IRINGBUF];
@@ -79,7 +79,7 @@ void disasm(){
 
 static void exec_once() {
   do{
-    top->clk = 1;
+    top->clock = 1;
     mem_sigs.update_input(*mem_ref);
     top->eval();
     mem.beat(mem_sigs_ref);
@@ -87,7 +87,7 @@ static void exec_once() {
     Vtime++;
     if(dump_wave_enable())
       tfp->dump(Vtime);
-    top->clk = 0;
+    top->clock = 0;
     top->eval();
     Vtime++;
     if(dump_wave_enable())

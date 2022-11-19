@@ -13,8 +13,8 @@
 =========================================================*/
 
 module top(
-  input  clk,
-  input  rst,
+  input  clock,
+  input  reset,
 
   // Advanced eXtensible Interface
     input                               axi_aw_ready_i,              
@@ -73,28 +73,27 @@ localparam ADDR_WIDTH = 64;
 localparam INST_WIDTH = 32;
 localparam REG_ADDR_W = 5;
 localparam RESET_ADDR = 64'h80000000;
-localparam RW_DATA_WIDTH    = 64;
-localparam RW_ADDR_WIDTH    = 64;
+localparam RW_DATA_WIDTH    = 256;
 localparam AXI_DATA_WIDTH   = 64;
-localparam AXI_ADDR_WIDTH   = 64;
+localparam AXI_ADDR_WIDTH   = 32;
 localparam AXI_ID_WIDTH     = 4;
 localparam AXI_STRB_WIDTH   = AXI_DATA_WIDTH/8;
 localparam AXI_USER_WIDTH   = 1;
 
  wire if_valid, if_ready;
- wire [DATA_WIDTH-1:0]    if_data_read;
+ wire [INST_WIDTH-1:0]    if_data_read;
  wire [ADDR_WIDTH-1:0]    if_addr;
  assign exec_once = if_ready;
 
-ysyx_22090729_CPU #(
+ysyx_040729_CPU #(
   .DATA_WIDTH(DATA_WIDTH),
   .ADDR_WIDTH(ADDR_WIDTH),
   .INST_WIDTH(INST_WIDTH),
   .REG_ADDR_W(REG_ADDR_W),
   .RESET_ADDR(RESET_ADDR)
 )cpu_inst(
-  .clk       (clk),
-  .rst       (rst),
+  .clock       (clock),
+  .reset       (reset),
 
 //.mem_valid       (),
 //.mem_ready       (),
@@ -118,29 +117,104 @@ function int unsigned getINST();
   return if_data_read[INST_WIDTH-1:0];
 endfunction
 
+//cache
+wire [AXI_ADDR_WIDTH-1:0] r_addr_c2a, w_addr_c2a;
+wire [2:0] r_size_c2a, w_size_c2a;
+wire r_valid_c2a, r_ready_c2a, w_valid_c2a, w_ready_c2a;
+wire [RW_DATA_WIDTH-1:0] r_data_c2a, w_data_c2a;
+
+wire [5:0]	  io_sram0_addr , io_sram1_addr , io_sram2_addr , io_sram3_addr , io_sram4_addr , io_sram5_addr , io_sram6_addr , io_sram7_addr ;
+wire  	      io_sram0_cen  , io_sram1_cen  , io_sram2_cen  , io_sram3_cen  , io_sram4_cen  , io_sram5_cen  , io_sram6_cen  , io_sram7_cen  ;
+wire  	      io_sram0_wen  , io_sram1_wen  , io_sram2_wen  , io_sram3_wen  , io_sram4_wen  , io_sram5_wen  , io_sram6_wen  , io_sram7_wen  ;
+wire [127:0]	io_sram0_wmask, io_sram1_wmask, io_sram2_wmask, io_sram3_wmask, io_sram4_wmask, io_sram5_wmask, io_sram6_wmask, io_sram7_wmask;
+wire [127:0]	io_sram0_wdata, io_sram1_wdata, io_sram2_wdata, io_sram3_wdata, io_sram4_wdata, io_sram5_wdata, io_sram6_wdata, io_sram7_wdata;
+wire [127:0]	io_sram0_rdata, io_sram1_rdata, io_sram2_rdata, io_sram3_rdata, io_sram4_rdata, io_sram5_rdata, io_sram6_rdata, io_sram7_rdata;
+ysyx_040729_Cache #(
+  .RW_DATA_WIDTH (RW_DATA_WIDTH),
+  .AXI_DATA_WIDTH(AXI_DATA_WIDTH),
+  .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH)
+)cache_inst(
+  .i_addr             (if_addr),
+  .i_valid            (if_valid),
+  .i_rdata            (if_data_read),
+  .i_ready            (if_ready),
+
+
+  .r_addr_o           (r_addr_c2a ),
+  .r_size_o           (r_size_c2a ),
+  .r_valid_o          (r_valid_c2a),
+  .r_ready_i          (r_ready_c2a),
+  .r_data_i           (r_data_c2a ),
+
+  .w_addr_o           (w_addr_c2a ),
+  .w_data_o           (w_data_c2a ),
+  .w_size_o           (w_size_c2a ),
+  .w_valid_o          (w_valid_c2a),
+  .w_ready_i          (w_ready_c2a),
+
+
+  .io_sram0_addr      (io_sram0_addr ),
+  .io_sram0_cen       (io_sram0_cen  ),
+  .io_sram0_wen       (io_sram0_wen  ),
+  .io_sram0_wmask     (io_sram0_wmask),
+  .io_sram0_wdata     (io_sram0_wdata),
+  .io_sram0_rdata     (io_sram0_rdata),
+
+  .io_sram1_addr      (io_sram1_addr ),
+  .io_sram1_cen       (io_sram1_cen  ),
+  .io_sram1_wen       (io_sram1_wen  ),
+  .io_sram1_wmask     (io_sram1_wmask),
+  .io_sram1_wdata     (io_sram1_wdata),
+  .io_sram1_rdata     (io_sram1_rdata),
+
+  .io_sram2_addr      (io_sram2_addr ),
+  .io_sram2_cen       (io_sram2_cen  ),
+  .io_sram2_wen       (io_sram2_wen  ),
+  .io_sram2_wmask     (io_sram2_wmask),
+  .io_sram2_wdata     (io_sram2_wdata),
+  .io_sram2_rdata     (io_sram2_rdata),
+
+  .io_sram3_addr      (io_sram3_addr ),
+  .io_sram3_cen       (io_sram3_cen  ),
+  .io_sram3_wen       (io_sram3_wen  ),
+  .io_sram3_wmask     (io_sram3_wmask),
+  .io_sram3_wdata     (io_sram3_wdata),
+  .io_sram3_rdata     (io_sram3_rdata),
+  
+
+  .clock              (clock),
+  .reset              (reset)
+);
+S011HD1P_X32Y2D128_BW sram0(io_sram0_rdata, clock, ~io_sram0_cen, ~io_sram0_wen, ~io_sram0_wmask, io_sram0_addr, io_sram0_wdata);
+S011HD1P_X32Y2D128_BW sram1(io_sram1_rdata, clock, ~io_sram1_cen, ~io_sram1_wen, ~io_sram1_wmask, io_sram1_addr, io_sram1_wdata);
+S011HD1P_X32Y2D128_BW sram2(io_sram2_rdata, clock, ~io_sram2_cen, ~io_sram2_wen, ~io_sram2_wmask, io_sram2_addr, io_sram2_wdata);
+S011HD1P_X32Y2D128_BW sram3(io_sram3_rdata, clock, ~io_sram3_cen, ~io_sram3_wen, ~io_sram3_wmask, io_sram3_addr, io_sram3_wdata);
+
 
 //axi
-ysyx_22040729_AXI # (
-    .RW_DATA_WIDTH (DATA_WIDTH),
-    .RW_ADDR_WIDTH (ADDR_WIDTH),
-    .AXI_DATA_WIDTH(DATA_WIDTH),
-    .AXI_ADDR_WIDTH(ADDR_WIDTH),
+
+ysyx_040729_AXI # (
+    .RW_DATA_WIDTH (RW_DATA_WIDTH),
+    .AXI_DATA_WIDTH(AXI_DATA_WIDTH),
+    .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
     .AXI_ID_WIDTH  (AXI_ID_WIDTH  ),
     .AXI_STRB_WIDTH(AXI_STRB_WIDTH),
     .AXI_USER_WIDTH(AXI_USER_WIDTH)
 )AXI_inst(
-    .clock              (clk),
-    .reset              (rst),
+    .clock              (clock),
+    .reset              (reset),
 
-	  .rw_req_i           (0),
-    .rw_valid_i         (if_valid),      //IF&MEM输入信号
-	  .rw_ready_o         (if_ready),      //IF&MEM输入信号
-    .data_read_o        (if_data_read),  //IF&MEM输入信号
-    .rw_w_data_i        (0),             //IF&MEM输入信号
-    .rw_addr_i          (if_addr),       //IF&MEM输入信号
-    .rw_size_i          (0),             //IF&MEM输入信号
+	  .r_addr_i           (r_addr_c2a ),
+    .r_size_i           (r_size_c2a ),
+    .r_valid_i          (r_valid_c2a),
+    .r_ready_o          (r_ready_c2a),
+    .r_data_o           (r_data_c2a ),
 
-
+    .w_addr_i           (w_addr_c2a ),
+    .w_data_i           (w_data_c2a ),
+    .w_size_i           (w_size_c2a ),
+    .w_valid_i          (w_valid_c2a),
+    .w_ready_o          (w_ready_c2a),
 
     .axi_aw_ready_i     (axi_aw_ready_i ),            
     .axi_aw_valid_o     (axi_aw_valid_o ),

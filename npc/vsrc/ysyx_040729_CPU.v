@@ -1,12 +1,12 @@
-module ysyx_22090729_CPU #(
+module ysyx_040729_CPU #(
     parameter DATA_WIDTH = 64,
     parameter ADDR_WIDTH = 64,
     parameter INST_WIDTH = 32,
     parameter REG_ADDR_W = 5,
     parameter RESET_ADDR = 64'h80000000
 )(
-  input  clk,
-  input  rst,
+  input  clock,
+  input  reset,
 
 //   output                      mem_valid,
 //   input                       mem_ready,
@@ -27,13 +27,13 @@ assign if_valid = 1;
 
 //Decoder
 reg [INST_WIDTH-1:0] instruction;
-Reg #(INST_WIDTH, {INST_WIDTH{1'b0}}) instruction_inst (clk, rst, if_data_read, instruction, if_hs);
+Reg #(INST_WIDTH, {INST_WIDTH{1'b0}}) instruction_inst (clock, reset, if_data_read, instruction, if_hs);
 wire [DATA_WIDTH-1:0] immediate;
 wire rf_we, mem_wen, alu_src2_ri, alu_len_dw;
 wire ecall, mret, csr_enable;
 wire [1:0] npc_src, alu_model;
 wire [2:0] rf_wdata_src;
-ysyx_22040729_Decoder #(32, 64) Decoder_inst(
+ysyx_040729_Decoder #(32, 64) Decoder_inst(
   .instruction  (instruction),
   .ecall        (ecall),
   .mret         (mret),
@@ -59,7 +59,7 @@ assign npc =  ({DATA_WIDTH{npc_src == 2'b00}} & snpc) |
               ({DATA_WIDTH{npc_src == 2'b01}} & dnpc) |
               ({DATA_WIDTH{npc_src == 2'b10}} & anpc) |
               ({DATA_WIDTH{npc_src == 2'b11}} & bnpc) ;
-Reg #(DATA_WIDTH, RESET_ADDR) PC_inst (clk, rst, pc_next, pc, if_hs);
+Reg #(DATA_WIDTH, RESET_ADDR) PC_inst (clock, reset, pc_next, pc, if_hs);
 assign if_addr = pc;
 
 
@@ -72,10 +72,10 @@ wire [DATA_WIDTH-1:0] mem_rdata/*verilator split_var*/, mem_wdata, mem_wdata_tem
 reg  [DATA_WIDTH-1:0] mem_rdata_temp;
 wire [7:0] mem_wmask;
 
-always @(clk or rst or mem_wen or mem_addr or mem_wdata_temp) begin //r/w data
-  if (rst) begin
+always @(clock or reset or mem_wen or mem_addr or mem_wdata_temp) begin //r/w data
+  if (reset) begin
     mem_rdata_temp = 0;
-  end else if (mem_wen & clk==0) begin
+  end else if (mem_wen & clock==0) begin
     pmem_write(mem_addr, mem_wdata_temp, mem_wmask);
     mem_rdata_temp = 0;
   end else begin
@@ -83,7 +83,7 @@ always @(clk or rst or mem_wen or mem_addr or mem_wdata_temp) begin //r/w data
     if (mem_addr[DATA_WIDTH-1:16]==48'h200) mem_rdata_temp = mem_rdata_clint;
   end
 end
-always @(posedge clk) begin
+always @(posedge clock) begin
   if(system_jump) pmem_write(0, 0, 0);//for skipping difftest
 end
 // always @(imem_addr) begin //fetch instruction
@@ -107,9 +107,9 @@ import "DPI-C" function void set_gpr_ptr(input reg [63:0] a []);
 initial set_gpr_ptr(RF_inst.rf);
 wire [REG_ADDR_W-1:0] rf_waddr, rf_raddr1, rf_raddr2;
 wire [DATA_WIDTH-1:0] rf_wdata, rf_rdata1, rf_rdata2;
-ysyx_22040729_RegisterFile #(32, DATA_WIDTH) RF_inst (
-  .clk    (clk),
-  .rst    (rst),
+ysyx_040729_RegisterFile #(32, DATA_WIDTH) RF_inst (
+  .clk      (clock),
+  .rst      (reset),
   .wen    (rf_we),
   .waddr  (rf_waddr),
   .wdata  (rf_wdata),
@@ -127,7 +127,7 @@ assign mem_wdata = rf_rdata2;
 wire [DATA_WIDTH-1:0] ALU_src1, ALU_src2, ALU_result;
 wire [2:0] alu_func3;
 wire [6:0] alu_func7;
-ysyx_22040729_ALU #(DATA_WIDTH) ALU_inst (
+ysyx_040729_ALU #(DATA_WIDTH) ALU_inst (
   .src1         (ALU_src1),
   .src2         (ALU_src2),
   .alu_func3    (alu_func3),
@@ -152,7 +152,7 @@ assign bnpc = ALU_result[0] ? dnpc : snpc;
 //Exception
 wire exception, ext_irq, tmr_irq, epc_select;
 wire [DATA_WIDTH-1:0] excp_mcause;
-ysyx_22040729_Excp Excp_inst(
+ysyx_040729_Excp Excp_inst(
   .ext_irq      (ext_irq),
   .tmr_irq      (tmr_irq),
   .ecall        (ecall),
@@ -165,7 +165,7 @@ ysyx_22040729_Excp Excp_inst(
 wire [2:0] csr_wfunc;
 wire clint_tirq;
 wire [DATA_WIDTH-1:0] csr_rdata, csr_mtvec_vis, csr_mepc_hwdata, csr_mcause_hwdata, csr_mepc_vis;
-ysyx_22040729_CSR CSR_inst(
+ysyx_040729_CSR CSR_inst(
   .csr_addr           (instruction[31:20]),
   .csr_wfunc          (csr_wfunc),
   .csr_uimm           (instruction[19:15]),
@@ -181,8 +181,8 @@ ysyx_22040729_CSR CSR_inst(
   .tirp_i             (clint_tirq),
   .eirp_o             (ext_irq),
   .tirp_o             (tmr_irq),
-  .clk                (clk),
-  .rst                (rst)
+  .clk                  (clock),
+  .rst                  (reset)
 );
 assign system_jump_entry =({DATA_WIDTH{exception}} & csr_mtvec_vis) |
                           ({DATA_WIDTH{mret     }} & csr_mepc_vis ) |
@@ -191,13 +191,13 @@ assign csr_wfunc = instruction[14:12] & {3{csr_enable}};
 assign csr_mepc_hwdata = epc_select ? npc : pc;
 assign csr_mcause_hwdata = excp_mcause;
 assign system_jump = exception | mret;
-always @(posedge clk) begin
+always @(posedge clock) begin
   if(csr_enable) pmem_write(0, 0, 0);//for skipping difftest
 end
 
 
 //clint
-ysyx_22040729_CLINT CLINT_inst(
+ysyx_040729_CLINT CLINT_inst(
   .clint_addr  (mem_addr),
   .clint_wdata (mem_wdata_temp),
   .clint_rdata (mem_rdata_clint),
@@ -205,8 +205,8 @@ ysyx_22040729_CLINT CLINT_inst(
   
   .clint_tirq  (clint_tirq),
 
-  .clk         (clk),
-  .rst         (rst)
+  .clk           (clock),
+  .rst           (reset)
 );
 
 

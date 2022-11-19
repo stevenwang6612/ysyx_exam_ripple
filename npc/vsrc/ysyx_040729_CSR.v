@@ -1,4 +1,4 @@
-module ysyx_22040729_CSR #(DATA_WIDTH = 64)(
+module ysyx_040729_CSR #(DATA_WIDTH = 64)(
     input  [11:0] csr_addr,
     input  [2:0]  csr_wfunc,
     input  [4:0]  csr_uimm,

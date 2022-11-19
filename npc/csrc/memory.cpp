@@ -23,8 +23,8 @@ uint8_t imem_ptr[IMEM_DEPTH];
 uint64_t *gpr_ptr = NULL;
 extern bool difftest_skip;
 extern bool difftest_skiped;
-axi4_mem<64,64,4> mem(0x100000000l);
-axi4_ref<64,64,4>* mem_ref;
+axi4_mem<32,64,4> mem(0x100000000l);
+axi4_ref<32,64,4>* mem_ref;
 
 
 const char *regs[] = {
@@ -71,7 +71,7 @@ extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   gpr_ptr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
 }
 
-static void connect_wire(axi4_ptr <64,64,4> &axi4_ptr, Vtop *top) {
+static void connect_wire(axi4_ptr <32,64,4> &axi4_ptr, Vtop *top) {
     // aw   
     axi4_ptr.awaddr     = &(top->axi_aw_addr_o);
     axi4_ptr.awburst    = &(top->axi_aw_burst_o);
@@ -131,10 +131,10 @@ long init_mem(){
   fclose(fp);
   mem.load_binary(image_file, RESET_VECTOR);
   extern Vtop *top;
-  axi4_ptr<64,64,4> mem_ptr;
+  axi4_ptr<32,64,4> mem_ptr;
   connect_wire(mem_ptr, top);
   assert(mem_ptr.check());
-  mem_ref = new axi4_ref<64,64,4>(mem_ptr);
+  mem_ref = new axi4_ref<32,64,4>(mem_ptr);
   return size;
 }
 

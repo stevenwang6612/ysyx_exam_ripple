@@ -1,4 +1,4 @@
-module ysyx_22040729_CLINT #(TICK_COUNT = 'h100, DATA_WIDTH = 64)(
+module ysyx_040729_CLINT #(TICK_COUNT = 'h100, DATA_WIDTH = 64)(
     input  [DATA_WIDTH-1:0] clint_addr,
     input  [DATA_WIDTH-1:0] clint_wdata,
     output [DATA_WIDTH-1:0] clint_rdata,
