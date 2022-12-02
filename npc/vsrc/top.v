@@ -80,10 +80,14 @@ localparam AXI_ID_WIDTH     = 4;
 localparam AXI_STRB_WIDTH   = AXI_DATA_WIDTH/8;
 localparam AXI_USER_WIDTH   = 1;
 
- wire if_valid, if_ready;
+ wire if_valid, if_ready, mem_valid, mem_ready, mem_wen;
+ wire [1:0] mem_size;
  wire [INST_WIDTH-1:0]    if_data_read;
- wire [ADDR_WIDTH-1:0]    if_addr;
- assign exec_once = if_ready;
+ wire [ADDR_WIDTH-1:0]    if_addr, mem_addr;
+ wire [DATA_WIDTH-1:0]    mem_data_read, mem_data_write;
+
+ wire [ADDR_WIDTH-1:0]    pc_vis, pc_out;
+ wire [INST_WIDTH-1:0]    instruction_vis, instruction_out;
 
 ysyx_040729_CPU #(
   .DATA_WIDTH(DATA_WIDTH),
@@ -95,27 +99,35 @@ ysyx_040729_CPU #(
   .clock       (clock),
   .reset       (reset),
 
-//.mem_valid       (),
-//.mem_ready       (),
-//.mem_data_read   (),
-//.mem_data_write  (),
-//.mem_addr        (),
-//.mem_size        (),
-//.mem_req         (),
+  .mem_valid       (mem_valid),
+  .mem_ready       (mem_ready),
+  .mem_data_read   (mem_data_read),
+  .mem_data_write  (mem_data_write),
+  .mem_addr        (mem_addr),
+  .mem_size        (mem_size),
+  .mem_wen         (mem_wen),
 
   .if_valid        (if_valid),
   .if_ready        (if_ready),
-  .if_data_read    (if_data_read[INST_WIDTH-1:0]),
-  .if_addr         (if_addr)
+  .if_data_read    (if_data_read),
+  .if_addr         (if_addr),
+
+  .pc_vis          (pc_vis),
+  .instruction_vis (instruction_vis),
+  .exec_once       (exec_once)
 );
+Reg #(INST_WIDTH, {INST_WIDTH{1'b0}}) instruction_out_stage_inst (clock, reset, instruction_vis, instruction_out, 1);
+Reg #(DATA_WIDTH, {DATA_WIDTH{1'b0}}) pc_out_stage_inst (clock, reset, pc_vis, pc_out, 1);
 export "DPI-C" function getPC;
 function longint unsigned getPC();
-  return if_addr;
+  return pc_out;
 endfunction
 export "DPI-C" function getINST;
 function int unsigned getINST();
-  return if_data_read[INST_WIDTH-1:0];
+  return instruction_out;
 endfunction
+import "DPI-C" function void set_gpr_ptr(input reg [63:0] a []);
+initial set_gpr_ptr(cpu_inst.IDU_inst.RF_inst.rf);
 
 //cache
 wire [AXI_ADDR_WIDTH-1:0] r_addr_c2a, w_addr_c2a;
@@ -138,6 +150,14 @@ ysyx_040729_Cache #(
   .i_valid            (if_valid),
   .i_rdata            (if_data_read),
   .i_ready            (if_ready),
+
+  .d_addr             (mem_addr),
+  .d_wen              (mem_wen),
+  .d_size             (mem_size),
+  .d_wdata            (mem_data_write),
+  .d_rdata            (mem_data_read),
+  .d_valid            (mem_valid),
+  .d_ready            (mem_ready),
 
 
   .r_addr_o           (r_addr_c2a ),
@@ -181,6 +201,34 @@ ysyx_040729_Cache #(
   .io_sram3_wdata     (io_sram3_wdata),
   .io_sram3_rdata     (io_sram3_rdata),
   
+  .io_sram4_addr      (io_sram4_addr ),
+  .io_sram4_cen       (io_sram4_cen  ),
+  .io_sram4_wen       (io_sram4_wen  ),
+  .io_sram4_wmask     (io_sram4_wmask),
+  .io_sram4_wdata     (io_sram4_wdata),
+  .io_sram4_rdata     (io_sram4_rdata),
+
+  .io_sram5_addr      (io_sram5_addr ),
+  .io_sram5_cen       (io_sram5_cen  ),
+  .io_sram5_wen       (io_sram5_wen  ),
+  .io_sram5_wmask     (io_sram5_wmask),
+  .io_sram5_wdata     (io_sram5_wdata),
+  .io_sram5_rdata     (io_sram5_rdata),
+
+  .io_sram6_addr      (io_sram6_addr ),
+  .io_sram6_cen       (io_sram6_cen  ),
+  .io_sram6_wen       (io_sram6_wen  ),
+  .io_sram6_wmask     (io_sram6_wmask),
+  .io_sram6_wdata     (io_sram6_wdata),
+  .io_sram6_rdata     (io_sram6_rdata),
+
+  .io_sram7_addr      (io_sram7_addr ),
+  .io_sram7_cen       (io_sram7_cen  ),
+  .io_sram7_wen       (io_sram7_wen  ),
+  .io_sram7_wmask     (io_sram7_wmask),
+  .io_sram7_wdata     (io_sram7_wdata),
+  .io_sram7_rdata     (io_sram7_rdata),
+
 
   .clock              (clock),
   .reset              (reset)
@@ -189,6 +237,10 @@ S011HD1P_X32Y2D128_BW sram0(io_sram0_rdata, clock, ~io_sram0_cen, ~io_sram0_wen,
 S011HD1P_X32Y2D128_BW sram1(io_sram1_rdata, clock, ~io_sram1_cen, ~io_sram1_wen, ~io_sram1_wmask, io_sram1_addr, io_sram1_wdata);
 S011HD1P_X32Y2D128_BW sram2(io_sram2_rdata, clock, ~io_sram2_cen, ~io_sram2_wen, ~io_sram2_wmask, io_sram2_addr, io_sram2_wdata);
 S011HD1P_X32Y2D128_BW sram3(io_sram3_rdata, clock, ~io_sram3_cen, ~io_sram3_wen, ~io_sram3_wmask, io_sram3_addr, io_sram3_wdata);
+S011HD1P_X32Y2D128_BW sram4(io_sram4_rdata, clock, ~io_sram4_cen, ~io_sram4_wen, ~io_sram4_wmask, io_sram4_addr, io_sram4_wdata);
+S011HD1P_X32Y2D128_BW sram5(io_sram5_rdata, clock, ~io_sram5_cen, ~io_sram5_wen, ~io_sram5_wmask, io_sram5_addr, io_sram5_wdata);
+S011HD1P_X32Y2D128_BW sram6(io_sram6_rdata, clock, ~io_sram6_cen, ~io_sram6_wen, ~io_sram6_wmask, io_sram6_addr, io_sram6_wdata);
+S011HD1P_X32Y2D128_BW sram7(io_sram7_rdata, clock, ~io_sram7_cen, ~io_sram7_wen, ~io_sram7_wmask, io_sram7_addr, io_sram7_wdata);
 
 
 //axi

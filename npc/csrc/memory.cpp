@@ -21,8 +21,6 @@
 static char* image_file = NULL;
 uint8_t imem_ptr[IMEM_DEPTH];
 uint64_t *gpr_ptr = NULL;
-extern bool difftest_skip;
-extern bool difftest_skiped;
 axi4_mem<32,64,4> mem(0x100000000l);
 axi4_ref<32,64,4>* mem_ref;
 
@@ -34,38 +32,7 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
-extern "C" void pmem_read(long long raddr, long long *rdata){
-  if(raddr >= RESET_VECTOR && raddr < RESET_VECTOR + IMEM_DEPTH){
-    *rdata = *(uint64_t *)(imem_ptr + raddr - RESET_VECTOR);
-  }else if(raddr >= DEVICE_BASE + 0x48 && raddr < DEVICE_BASE + 0x68){
-    update_rtc();
-    *rdata = read_rtc(raddr - DEVICE_BASE - 0x48);
-    difftest_skip = true;
-  }else if(raddr>=0x2000000 && raddr<0x200BFFF){
-    difftest_skip = true;
-  }else{
-    *rdata = 0;
-    //difftest_skip = true;
-    //printf("0x%llx\n", raddr);
-  }
-}
-extern "C" void pmem_write(long long waddr, long long wdata, char wmask) {
-  if(waddr >= RESET_VECTOR && waddr < RESET_VECTOR + IMEM_DEPTH){
-    uint8_t *wdata_byte = (uint8_t *)(&wdata);
-    for(int i=0; i<8; i++)
-      if(wmask>>i & 1)
-        imem_ptr[waddr - RESET_VECTOR + i] = *(wdata_byte + i);
-  }else if(waddr == DEVICE_BASE + 0x3f8 && wmask & 1){//uart
-    putchar((char)wdata);
-    difftest_skip = true;
-    //printf("0x%llx\n", waddr);
-  }else if(waddr==0){
-    difftest_skiped = true;//for difftest of interrupt
-  }else{
-    difftest_skip = true;
-    //printf("0x%llx\n", waddr);
-  }
-}
+
 
 extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   gpr_ptr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());

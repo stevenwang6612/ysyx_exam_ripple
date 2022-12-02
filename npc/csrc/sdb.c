@@ -212,9 +212,11 @@ static int cmd_r(char *args){
     tfp->dump(Vtime);
   return 0;
 }
+
+void exec_once();
 void sdb_mainloop() {
   cmd_r(NULL);
-  
+  while(getPC()==0) exec_once();
   if (is_batch_mode) {
     cmd_c(NULL);
     return;

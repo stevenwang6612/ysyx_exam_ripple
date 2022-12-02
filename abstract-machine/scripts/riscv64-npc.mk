@@ -28,7 +28,7 @@ image: $(IMAGE).elf
 	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
 
 sdb: image
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(LOGFLAGS) -i $(IMAGE).bin"
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) $(WAVFLAGS) -i $(IMAGE).bin"
 
 run: image
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) $(LOGFLAGS) -b -i $(IMAGE).bin"

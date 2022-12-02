@@ -11,7 +11,7 @@
 # Description: 
 #
 =========================================================*/
-module ysyx_040729_Decoder #(INST_WIDTH = 32, DATA_WIDTH = 64) (
+module ysyx_040729_IDU_Decoder #(INST_WIDTH = 32, DATA_WIDTH = 64) (
   input  [INST_WIDTH-1:0] instruction,
 
   output ecall,
@@ -21,7 +21,6 @@ module ysyx_040729_Decoder #(INST_WIDTH = 32, DATA_WIDTH = 64) (
   output rf_we,  
   output [2:0] rf_wdata_src,
   output [1:0] npc_src,
-  output [1:0] alu_model,
   output alu_len_dw,
   output alu_src2_ri,
   output mem_wen,
@@ -46,21 +45,21 @@ assign ecall = instruction==32'h00000073;
 assign mret  = instruction==32'h30200073;
 assign csr_enable = inst_type==SYS_TYPE;
 
-MuxKey #(12, 5, 11) opcode_decode (
-  {rf_wdata_src, npc_src, alu_model, alu_len_dw, inst_type},
+MuxKey #(12, 5, 9) opcode_decode (
+  {rf_wdata_src, npc_src, alu_len_dw, inst_type},
   opcode[6:2], {
-  5'b01101, 3'b010, 2'b00, 2'b00, 1'b0, U_TYPE,     //LUI
-  5'b00101, 3'b011, 2'b00, 2'b00, 1'b0, U_TYPE,     //AUIPC
-  5'b11011, 3'b011, 2'b01, 2'b00, 1'b0, J_TYPE,     //JAL
-  5'b11001, 3'b011, 2'b10, 2'b00, 1'b0, I_TYPE,     //JALR
-  5'b11000, 3'b000, 2'b11, 2'b11, 1'b0, B_TYPE,     //BEQ
-  5'b00000, 3'b001, 2'b00, 2'b00, 1'b0, I_TYPE,     //LB
-  5'b01000, 3'b000, 2'b00, 2'b00, 1'b0, S_TYPE,     //SB
-  5'b00100, 3'b000, 2'b00, 2'b10, 1'b0, I_TYPE,     //ADDI
-  5'b01100, 3'b000, 2'b00, 2'b01, 1'b0, R_TYPE,     //ADD
-  5'b00110, 3'b000, 2'b00, 2'b10, 1'b1, I_TYPE,     //ADDIW
-  5'b01110, 3'b000, 2'b00, 2'b01, 1'b1, R_TYPE,     //ADDW
-  5'b11100, 3'b100, 2'b00, 2'b00, 1'b0, SYS_TYPE}   //SYSTEM
+  5'b01101, 3'b010, 2'b00, 1'b0, U_TYPE,     //LUI
+  5'b00101, 3'b100, 2'b00, 1'b0, U_TYPE,     //AUIPC
+  5'b11011, 3'b101, 2'b01, 1'b0, J_TYPE,     //JAL
+  5'b11001, 3'b101, 2'b10, 1'b0, I_TYPE,     //JALR
+  5'b11000, 3'b000, 2'b11, 1'b0, B_TYPE,     //BEQ
+  5'b00000, 3'b001, 2'b00, 1'b0, I_TYPE,     //LB
+  5'b01000, 3'b000, 2'b00, 1'b0, S_TYPE,     //SB
+  5'b00100, 3'b000, 2'b00, 1'b0, I_TYPE,     //ADDI
+  5'b01100, 3'b000, 2'b00, 1'b0, R_TYPE,     //ADD
+  5'b00110, 3'b000, 2'b00, 1'b1, I_TYPE,     //ADDIW
+  5'b01110, 3'b000, 2'b00, 1'b1, R_TYPE,     //ADDW
+  5'b11100, 3'b000, 2'b00, 1'b0, SYS_TYPE}   //SYSTEM
 );
 
 MuxKey #(7, 3, 3) inst_type_decode (

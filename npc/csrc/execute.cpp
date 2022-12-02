@@ -77,7 +77,7 @@ void disasm(){
   log_write("%s\n", log_buf);
 }
 
-static void exec_once() {
+void exec_once() {
   do{
     top->clock = 1;
     mem_sigs.update_input(*mem_ref);

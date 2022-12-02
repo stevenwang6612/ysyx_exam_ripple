@@ -64,7 +64,7 @@ sim: $(BIN)
 
 count:
 	@find ./vsrc -name "*.v" | xargs cat | wc -l | xargs echo -n "verilog:" && echo " lines"
-	@find ./csrc -name "*.cpp" -o -name "*.cc" -o -name "*.c" -o -name "*.h"| xargs cat | wc -l | xargs echo -n "c & cpp:" && echo " lines"
+	@find ./csrc -name "*.cpp" -o -name "*.cc" -o -name "*.c" -o -name "*.h" -o -name "*.hpp"| xargs cat | wc -l | xargs echo -n "c & cpp:" && echo " lines"
 
 clean:
 	rm -rf $(BUILD_DIR)

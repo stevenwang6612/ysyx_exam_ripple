@@ -11,27 +11,20 @@
 # Description: 
 #
 =========================================================*/
-module ysyx_040729_ALU #(DATA_WIDTH = 64)(
+module ysyx_040729_EXE_ALU #(DATA_WIDTH = 64)(
   input  [DATA_WIDTH-1:0] src1,
   input  [DATA_WIDTH-1:0] src2,
   input  [2:0] alu_func3,
   input  [6:0] alu_func7,
-  input  [1:0] alu_model,
+  input  alu_src2_ri,
   input  alu_len_dw,
   output [DATA_WIDTH-1:0] result
 );
 wire [DATA_WIDTH-1:0] result_before_dw;
 assign result = alu_len_dw ? {{33{result_before_dw[31]}}, result_before_dw[30:0]} : result_before_dw;
 
-wire [DATA_WIDTH-1:0] result_default, result_rbasic, result_ibasic, result_branch;
-MuxKey #(4, 2, DATA_WIDTH) mux_lau_model (
-  result_before_dw,
-  alu_model, {
-    2'b00, result_default,
-    2'b01, result_rbasic,
-    2'b10, result_ibasic,
-    2'b11, result_branch}
-);
+wire [DATA_WIDTH-1:0] result_rbasic, result_ibasic;
+assign result_before_dw = alu_src2_ri ? result_ibasic : result_rbasic;
 
 //add
 wire [DATA_WIDTH:0] add_result;
@@ -58,13 +51,15 @@ wire [DATA_WIDTH-1:0] xor_result;
 assign xor_result = src1 ^ src2;
 
 //srl(a)
-wire [DATA_WIDTH-1:0] srla_result, srl_result, sra_result, srl_result_t, sra_result_t, sraw_result_t, eff_mask;
+wire [DATA_WIDTH-1:0] srla_result, srl_result, sra_result, srl_result_t, srlw_result_t, sra_result_t, sraw_result_t, eff_mask, eff_mask_w;
 assign eff_mask = {DATA_WIDTH{1'b1}} >> src2[5:0];
+assign eff_mask_w = {{DATA_WIDTH/2{1'b0}}, eff_mask[DATA_WIDTH-1:DATA_WIDTH/2]};
 assign srl_result_t = src1 >> src2[5:0];
-assign sra_result_t = (srl_result & eff_mask) | ({DATA_WIDTH{src1[DATA_WIDTH-1]}} & (~eff_mask));
-assign sraw_result_t = (srl_result & eff_mask) | ({DATA_WIDTH{src1[DATA_WIDTH/2-1]}} & (~eff_mask));
-assign srl_result = alu_len_dw ? {{DATA_WIDTH/2{1'b0}}, srl_result_t[DATA_WIDTH/2-1:0]} : srl_result_t;
-assign sra_result = alu_len_dw ? {{DATA_WIDTH/2{1'b0}}, sraw_result_t[DATA_WIDTH/2-1:0]} : sra_result_t;
+assign srlw_result_t = srl_result_t & eff_mask_w;
+assign sra_result_t = (srl_result_t & eff_mask) | ({DATA_WIDTH{src1[DATA_WIDTH-1]}} & (~eff_mask));
+assign sraw_result_t = (srl_result_t & eff_mask_w) | ({DATA_WIDTH{src1[DATA_WIDTH/2-1]}} & (~eff_mask_w));
+assign srl_result = alu_len_dw ? srlw_result_t : srl_result_t;
+assign sra_result = alu_len_dw ? sraw_result_t : sra_result_t;
 assign srla_result = alu_func7[5] ? sra_result : srl_result;
 
 //or
@@ -87,7 +82,7 @@ assign mul_result = mul_src1 * mul_src2;
 //div
 wire [DATA_WIDTH-1:0] div_quo, div_rem, div_quo_temp, div_rem_temp, div_dividend, div_divisor;
 wire div_sign;
-ysyx_040729_ALU_Divider #(DATA_WIDTH, DATA_WIDTH) divider_inst( 
+ysyx_040729_EXE_ALU_Divider #(DATA_WIDTH, DATA_WIDTH) divider_inst( 
   .dividend   (div_dividend),
   .divisor    (div_divisor ),
   .quotient   (div_quo_temp),
@@ -100,8 +95,6 @@ assign div_quo      = (div_sign & (src1[DATA_WIDTH-1] ^ src2[DATA_WIDTH-1])) ? ~
 assign div_rem      = div_rem_temp;
 
 
-//result_default
-assign result_default = add_result[DATA_WIDTH-1:0];
 
 //result_rbasic
 MuxKey #(16, 4, DATA_WIDTH) mux_rbasic (
@@ -139,18 +132,6 @@ MuxKey #(8, 3, DATA_WIDTH) mux_ibasic (
     3'b111, and_result}                  //andi
 );
 
-//result_branch
-MuxKey #(6, 3, 1) mux_branch (
-  result_branch[0],
-  alu_func3, {
-    3'b000, !(|sub_result),              //beq 
-    3'b001, |sub_result,                 //bne
-    3'b100, sub_result[DATA_WIDTH-1],    //blt
-    3'b101, !sub_result[DATA_WIDTH-1],   //bge
-    3'b110, sub_result[DATA_WIDTH],      //bltu
-    3'b111, !sub_result[DATA_WIDTH]}     //bgeu
-);
-assign result_branch[DATA_WIDTH-1:1] = '0;
 
 
 endmodule
