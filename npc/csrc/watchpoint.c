@@ -45,7 +45,7 @@ int new_wp(char *args){
     head->value = value;
     return head->NO;
   }else{
-    WP *temp = head;
+    WP *temp = head->next;
     WP *temp_pre = head;
     while(temp != NULL){
       if(temp->NO < free_->NO){

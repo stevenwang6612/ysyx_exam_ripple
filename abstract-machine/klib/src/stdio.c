@@ -127,6 +127,9 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
 				break;
 			case 'X':
 				flags |= LARGE;//小写转大写
+      case 'p':
+        *str++ = '0';
+        *str++ = 'x';
 			case 'x':  //十六进制
 				base = 16;
 				break;

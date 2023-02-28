@@ -11,6 +11,7 @@
 # Description: 
 #
 =========================================================*/
+#include <common.h>
 #include "Vtop.h"
 #include "verilated.h"
 #include "verilated_vcd_c.h"
@@ -34,6 +35,7 @@ void init_Verilated(){
 
 
 void exit_Verilated(){
+  destroy_device();
   top->final();
   if(dump_wave_flag){
     tfp->close();

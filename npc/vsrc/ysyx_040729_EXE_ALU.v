@@ -12,12 +12,18 @@
 #
 =========================================================*/
 module ysyx_040729_EXE_ALU #(DATA_WIDTH = 64)(
+  input  clock,
+  input  reset,
+  input  exe_flow,
   input  [DATA_WIDTH-1:0] src1,
   input  [DATA_WIDTH-1:0] src2,
   input  [2:0] alu_func3,
   input  [6:0] alu_func7,
   input  alu_src2_ri,
   input  alu_len_dw,
+
+  input  mem_hazard,
+  output alu_busy,
   output [DATA_WIDTH-1:0] result
 );
 wire [DATA_WIDTH-1:0] result_before_dw;
@@ -52,9 +58,10 @@ assign xor_result = src1 ^ src2;
 
 //srl(a)
 wire [DATA_WIDTH-1:0] srla_result, srl_result, sra_result, srl_result_t, srlw_result_t, sra_result_t, sraw_result_t, eff_mask, eff_mask_w;
-assign eff_mask = {DATA_WIDTH{1'b1}} >> src2[5:0];
+wire [5:0] shift_amount = {alu_len_dw ? 1'b0 : src2[5], src2[4:0]};
+assign eff_mask = {DATA_WIDTH{1'b1}} >> shift_amount;
 assign eff_mask_w = {{DATA_WIDTH/2{1'b0}}, eff_mask[DATA_WIDTH-1:DATA_WIDTH/2]};
-assign srl_result_t = src1 >> src2[5:0];
+assign srl_result_t = src1 >> shift_amount;
 assign srlw_result_t = srl_result_t & eff_mask_w;
 assign sra_result_t = (srl_result_t & eff_mask) | ({DATA_WIDTH{src1[DATA_WIDTH-1]}} & (~eff_mask));
 assign sraw_result_t = (srl_result_t & eff_mask_w) | ({DATA_WIDTH{src1[DATA_WIDTH/2-1]}} & (~eff_mask_w));
@@ -71,30 +78,59 @@ wire [DATA_WIDTH-1:0] and_result;
 assign and_result = src1 & src2;
 
 //mul
-wire [2*DATA_WIDTH-1:0] mul_src1, mul_src2, mul_result;
+wire [2*DATA_WIDTH-1:0] mul_result;
 wire mul_src1_sign, mul_src2_sign;
+wire mul_cal, mul_ready, mul_out_valid, mul_valid;
+Reg #(1, 1'b0) mul_cal_inst (clock, reset, exe_flow, mul_cal, exe_flow | mul_out_valid);
+wire mul_busy = {alu_func7[0],alu_func3[2]}==2'b10 & mul_cal & !mul_out_valid & ~mem_hazard;
+assign mul_valid = {alu_func7[0],alu_func3[2]}==2'b10 & mul_cal & mul_ready & ~mem_hazard;
 assign mul_src1_sign = alu_func3[1:0]!=2'b11;
 assign mul_src2_sign = !alu_func3[1];
-assign mul_src1 = mul_src1_sign ? {{DATA_WIDTH{src1[DATA_WIDTH-1]}}, src1} : {{DATA_WIDTH{1'b0}}, src1};
-assign mul_src2 = mul_src2_sign ? {{DATA_WIDTH{src2[DATA_WIDTH-1]}}, src2} : {{DATA_WIDTH{1'b0}}, src2};
-assign mul_result = mul_src1 * mul_src2;
+ysyx_040729_EXE_ALU_Multiplier #(DATA_WIDTH) multiplier_inst(
+  .clock          (clock),
+	.reset          (reset),
+	.mul_valid      (mul_valid),
+	.flush          (exe_flow),
+	.mulw	          (alu_len_dw),
+	.mul_signed     ({mul_src1_sign, mul_src2_sign}),
+	.multiplicand   (src1),
+	.multiplier     (src2),
+	.mul_ready      (mul_ready),
+	.out_valid      (mul_out_valid),
+	.result_hi      (mul_result[127:64]),
+	.result_lo      (mul_result[63:0])
+);
 
 //div
 wire [DATA_WIDTH-1:0] div_quo, div_rem, div_quo_temp, div_rem_temp, div_dividend, div_divisor;
 wire div_sign;
+wire div_cal, div_ready, div_out_valid, div_valid;
+Reg #(1, 1'b0) div_cal_inst (clock, reset, exe_flow, div_cal, exe_flow | div_out_valid);
+wire div_busy = {alu_func7[0],alu_func3[2]}==2'b11 & div_cal & !div_out_valid & ~mem_hazard;
+assign div_valid = {alu_func7[0],alu_func3[2]}==2'b11 & div_cal & div_ready & ~mem_hazard;
+
 ysyx_040729_EXE_ALU_Divider #(DATA_WIDTH, DATA_WIDTH) divider_inst( 
-  .dividend   (div_dividend),
-  .divisor    (div_divisor ),
-  .quotient   (div_quo_temp),
-  .remainders (div_rem_temp)
+  .clock       (clock),
+  .reset       (reset),
+  .dividend    (div_dividend),
+  .divisor     (div_divisor),
+  .div_valid   (div_valid),
+  .divw        (alu_len_dw),
+  .flush       (exe_flow),
+  .div_ready   (div_ready),
+  .out_valid   (div_out_valid),
+  .quotient    (div_quo_temp),
+  .remainder   (div_rem_temp)
 );
+wire [DATA_WIDTH-1:0] div_dividend_t = alu_len_dw ? {src1[DATA_WIDTH/2-1:0], {DATA_WIDTH/2{1'b0}}} : src1;
+wire [DATA_WIDTH-1:0] div_divisor_t  = alu_len_dw ? {src2[DATA_WIDTH/2-1:0], {DATA_WIDTH/2{1'b0}}} : src2;
 assign div_sign = !alu_func3[0];
-assign div_dividend = div_sign & src1[DATA_WIDTH-1] ? ~src1 + 1'b1 : src1;
-assign div_divisor  = div_sign & src2[DATA_WIDTH-1] ? ~src2 + 1'b1 : src2;
-assign div_quo      = (div_sign & (src1[DATA_WIDTH-1] ^ src2[DATA_WIDTH-1])) ? ~div_quo_temp + 1'b1 : div_quo_temp;
-assign div_rem      = div_rem_temp;
+assign div_dividend = div_sign & div_dividend_t[DATA_WIDTH-1] ? ~div_dividend_t + 1'b1 : div_dividend_t;
+assign div_divisor  = div_sign & div_divisor_t[DATA_WIDTH-1] ? ~div_divisor_t + 1'b1 : div_divisor_t;
+assign div_quo      = (div_sign & (div_dividend_t[DATA_WIDTH-1] ^ div_divisor_t[DATA_WIDTH-1])) ? ~div_quo_temp + 1'b1 : div_quo_temp;
+assign div_rem      = (div_sign & div_dividend_t[DATA_WIDTH-1]) ? ~div_rem_temp + 1'b1 : div_rem_temp;
 
-
+assign alu_busy = mul_busy | div_busy;
 
 //result_rbasic
 MuxKey #(16, 4, DATA_WIDTH) mux_rbasic (

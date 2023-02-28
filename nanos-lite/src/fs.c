@@ -108,7 +108,9 @@ void init_fs() {
     file_table[i].write = ramdisk_write;
   }
   // TODO: initialize the size of /dev/fb
-  int w = io_read(AM_GPU_CONFIG).width;
-  int h = io_read(AM_GPU_CONFIG).height;
-  file_table[FD_FB].size = w * h * 4;
+  if(io_read(AM_GPU_CONFIG).present){
+    int w = io_read(AM_GPU_CONFIG).width;
+    int h = io_read(AM_GPU_CONFIG).height;
+    file_table[FD_FB].size = w * h * 4;
+  }
 }

@@ -27,7 +27,7 @@ module ysyx_040729_IDU_Decoder #(INST_WIDTH = 32, DATA_WIDTH = 64) (
   output [DATA_WIDTH-1:0] immediate
 );
 
-localparam NONE_TYPE = 3'd0;
+//localparam NONE_TYPE = 3'd0;
 localparam R_TYPE    = 3'd1;
 localparam I_TYPE    = 3'd2;
 localparam S_TYPE    = 3'd3;
@@ -45,21 +45,21 @@ assign ecall = instruction==32'h00000073;
 assign mret  = instruction==32'h30200073;
 assign csr_enable = inst_type==SYS_TYPE;
 
-MuxKey #(12, 5, 9) opcode_decode (
+MuxKey #(12, 7, 9) opcode_decode (
   {rf_wdata_src, npc_src, alu_len_dw, inst_type},
-  opcode[6:2], {
-  5'b01101, 3'b010, 2'b00, 1'b0, U_TYPE,     //LUI
-  5'b00101, 3'b100, 2'b00, 1'b0, U_TYPE,     //AUIPC
-  5'b11011, 3'b101, 2'b01, 1'b0, J_TYPE,     //JAL
-  5'b11001, 3'b101, 2'b10, 1'b0, I_TYPE,     //JALR
-  5'b11000, 3'b000, 2'b11, 1'b0, B_TYPE,     //BEQ
-  5'b00000, 3'b001, 2'b00, 1'b0, I_TYPE,     //LB
-  5'b01000, 3'b000, 2'b00, 1'b0, S_TYPE,     //SB
-  5'b00100, 3'b000, 2'b00, 1'b0, I_TYPE,     //ADDI
-  5'b01100, 3'b000, 2'b00, 1'b0, R_TYPE,     //ADD
-  5'b00110, 3'b000, 2'b00, 1'b1, I_TYPE,     //ADDIW
-  5'b01110, 3'b000, 2'b00, 1'b1, R_TYPE,     //ADDW
-  5'b11100, 3'b000, 2'b00, 1'b0, SYS_TYPE}   //SYSTEM
+  opcode[6:0], {
+  7'b0110111, 3'b010, 2'b00, 1'b0, U_TYPE,     //LUI
+  7'b0010111, 3'b100, 2'b00, 1'b0, U_TYPE,     //AUIPC
+  7'b1101111, 3'b101, 2'b01, 1'b0, J_TYPE,     //JAL
+  7'b1100111, 3'b101, 2'b10, 1'b0, I_TYPE,     //JALR
+  7'b1100011, 3'b000, 2'b11, 1'b0, B_TYPE,     //BEQ
+  7'b0000011, 3'b001, 2'b00, 1'b0, I_TYPE,     //LB
+  7'b0100011, 3'b000, 2'b00, 1'b0, S_TYPE,     //SB
+  7'b0010011, 3'b000, 2'b00, 1'b0, I_TYPE,     //ADDI
+  7'b0110011, 3'b000, 2'b00, 1'b0, R_TYPE,     //ADD
+  7'b0011011, 3'b000, 2'b00, 1'b1, I_TYPE,     //ADDIW
+  7'b0111011, 3'b000, 2'b00, 1'b1, R_TYPE,     //ADDW
+  7'b1110011, 3'b000, 2'b00, 1'b0, SYS_TYPE}   //SYSTEM
 );
 
 MuxKey #(7, 3, 3) inst_type_decode (

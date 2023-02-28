@@ -9,6 +9,7 @@ size_t fs_lseek(int fd, size_t offset, int whence);
 int fs_close(int fd);
 void naive_uload(PCB *pcb, const char *filename);
 int timer_gettimeofday(void *tv, void *tz);
+Context* schedule(Context *prev);
 
 void do_syscall(Context *c) {
   uintptr_t a[4];
@@ -18,7 +19,7 @@ void do_syscall(Context *c) {
   a[3] = c->GPR4;
 
   switch (a[0]) {
-    case SYS_exit: naive_uload(0, "/bin/nterm"); break;
+    case SYS_exit: break; naive_uload(0, "/bin/menu"); break;
     case SYS_yield: yield(); break;
     case SYS_open: c->GPRx = fs_open((void *)a[1], a[2], a[3]); break;
     case SYS_read: c->GPRx = fs_read(a[1], (void *)a[2], a[3]); break;

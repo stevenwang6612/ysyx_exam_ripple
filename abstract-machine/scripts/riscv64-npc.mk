@@ -4,10 +4,11 @@ AM_SRCS := riscv/npc/start.S \
            riscv/npc/trm.c \
            riscv/npc/ioe.c \
            riscv/npc/timer.c \
+           riscv/npc/gpu.c \
            riscv/npc/input.c \
            riscv/npc/cte.c \
            riscv/npc/trap.S \
-           platform/dummy/vme.c \
+           riscv/npc/vme.c \
            platform/dummy/mpe.c
 
 CFLAGS    += -fdata-sections -ffunction-sections
@@ -28,16 +29,16 @@ image: $(IMAGE).elf
 	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
 
 sdb: image
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) $(WAVFLAGS) -i $(IMAGE).bin"
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) -i $(IMAGE).bin"
 
 run: image
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) $(LOGFLAGS) -b -i $(IMAGE).bin"
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) -b -i $(IMAGE).bin"
 
 wave: image
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(DIFFFLAGS) $(WAVFLAGS) $(LOGFLAGS) -b -i $(IMAGE).bin"
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(WAVFLAGS) $(LOGFLAGS) -b -i $(IMAGE).bin"
 
 run_fast: image
-	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="$(LOGFLAGS) -b -i $(IMAGE).bin"
+	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) run ARGS="-b -i $(IMAGE).bin"
 
 gdb: image
 	$(MAKE) -C $(NPC_HOME) ISA=$(ISA) gdb ARGS="$(LOGFLAGS) -i $(IMAGE).bin"

@@ -41,7 +41,6 @@ static char* rl_gets() {
 
 
 static int cmd_q(char *args){
-  statistic();
   return -1;
 }
 static int cmd_c(char *args){

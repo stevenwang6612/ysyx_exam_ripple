@@ -102,6 +102,7 @@ void execute(uint64_t n) {
     exec_once();
     uint64_t timer_end = get_time();
     g_nr_guest_inst++;
+    //if(g_nr_guest_inst%0xfffff==0) Log("running: 0x%llx", getPC());
     g_timer += timer_end - timer_start;
     if(getINST()==0x00100073){
       trap_flag = gpr_read(10) == 0;
@@ -114,6 +115,9 @@ void execute(uint64_t n) {
       Log("%s", ASNI_FMT("ABORT: difftest error!", ASNI_FG_RED));
       display_iringbuf();
       trap_flag = false;
+      break;
+    }
+    if(device_update()){
       break;
     }
     if(scan_wp()){

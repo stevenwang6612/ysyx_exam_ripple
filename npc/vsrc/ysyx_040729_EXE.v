@@ -1,18 +1,18 @@
 module ysyx_040729_EXE #(
     parameter DATA_WIDTH = 64,
-    parameter ADDR_WIDTH = 64,
     parameter INST_WIDTH = 32,
     parameter REG_ADDR_W = 5
 )(
   input  clock,
   input  reset,
 
+  input  exe_flow,
+
   input  [DATA_WIDTH-1:0] rf_rdata1_i,
   input  [DATA_WIDTH-1:0] rf_rdata2_i,
   input  alu_src2_ri_i,
   input  alu_len_dw_i,
   input  [DATA_WIDTH-1:0] immediate_i,
-  input  [ADDR_WIDTH-1:0] pc_i,
   input  [INST_WIDTH-1:0] instruction_i,
   input  [DATA_WIDTH-1:0] csr_rdata_i,
   input                   rf_we_wb_i,
@@ -21,9 +21,11 @@ module ysyx_040729_EXE #(
   input  [REG_ADDR_W-1:0] dst_addr_wb_i,
   input  [REG_ADDR_W-1:0] dst_addr_mem_i,
   input  [DATA_WIDTH-1:0] rf_wdata_wb_i,
-  input  [DATA_WIDTH-1:0] ALU_result_mem_i,
-  input  [DATA_WIDTH-1:0] immediate_mem_i,
-  input  [DATA_WIDTH-1:0] pc_mem_i,
+  //input  [DATA_WIDTH-1:0] ALU_result_mem_i,
+  //input  [DATA_WIDTH-1:0] immediate_mem_i,
+  //input  [DATA_WIDTH-1:0] pc_mem_i,
+
+  output                  alu_busy,
 
   output                  mem_hazard_o,
   output [DATA_WIDTH-1:0] mem_wdata_exe_o,
@@ -64,12 +66,17 @@ wire [DATA_WIDTH-1:0] ALU_src1, ALU_src2, ALU_result;
 wire [2:0] alu_func3 = instruction_i[14:12];
 wire [6:0] alu_func7 = instruction_i[31:25];
 ysyx_040729_EXE_ALU #(DATA_WIDTH) ALU_inst (
+  .clock        (clock),
+	.reset        (reset),
+  .exe_flow     (exe_flow),
   .src1         (ALU_src1),
   .src2         (ALU_src2),
   .alu_func3    (alu_func3),
   .alu_func7    (alu_func7),
   .alu_src2_ri  (alu_src2_ri_i),
   .alu_len_dw   (alu_len_dw_i),
+  .mem_hazard   (mem_hazard_o),
+  .alu_busy     (alu_busy),
   .result       (ALU_result)
 );
 assign ALU_src1 = src1_forward_mem ? rf_rdata1_i :

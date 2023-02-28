@@ -23,6 +23,10 @@ bool difftest_skiped = false;
 static char *diff_so_file = NULL;
 static int difftest_port = 1234;
 
+extern "C" void set_difftest_skip() {
+  difftest_skip = true;
+}
+
 
 void init_disasm(const char *triple);
 static void init_log();
@@ -98,12 +102,14 @@ void init_monitor(int argc, char *argv[]) {
 //log
 static void init_log() {
   if (log_file != NULL) {
-    FILE *fp = fopen(log_file, "w");
-    Assert(fp, "Can not open '%s'", log_file);
-    log_fp = fp;
-  }else
-    log_fp = stdout;
-  Log("Log is written to %s", log_file ? log_file : "stdout");
+    if (strcmp(log_file, "stdout")) {
+      FILE *fp = fopen(log_file, "w");
+      Assert(fp, "Can not open '%s'", log_file);
+      log_fp = fp;
+    }else
+      log_fp = stdout;
+  }
+  Log("Log is written to %s", log_file ? log_file : "NULL");
 }
 
 //difftest
@@ -151,6 +157,7 @@ static void init_difftest(long img_size) {
   ref_difftest_init(difftest_port);
   ref_difftest_memcpy(RESET_VECTOR, imem_ptr, img_size, DIFFTEST_TO_REF);
   ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
+  ref_difftest_init(difftest_port);
 }
 
 static bool checkregs(CPU_state *ref_r) {

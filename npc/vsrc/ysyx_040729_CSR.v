@@ -18,6 +18,7 @@ module ysyx_040729_CSR #(DATA_WIDTH = 64)(
     output eirp_o,
     output tirp_o,
 
+    input  flow_i,
     input  clock,
     input  reset
 );
@@ -31,9 +32,11 @@ assign csr_wdata  = ({DATA_WIDTH{csr_wfunc[1:0]==2'b01}} & ( csr_wdata_temp     
 ////
 //read data
 assign csr_rdata =  ({DATA_WIDTH{csr_mstatus_sel}} &  csr_mstatus) |
+                    ({DATA_WIDTH{csr_mie_sel    }} &  csr_mie    ) |
                     ({DATA_WIDTH{csr_mtvec_sel  }} &  csr_mtvec  ) |
                     ({DATA_WIDTH{csr_mepc_sel   }} &  csr_mepc   ) |
-                    ({DATA_WIDTH{csr_mcause_sel }} &  csr_mcause ) ;
+                    ({DATA_WIDTH{csr_mcause_sel }} &  csr_mcause ) |
+                    ({DATA_WIDTH{csr_mip_sel    }} &  csr_mip    ) ;
 ////
 
 
@@ -46,13 +49,13 @@ Reg #(1, 1'b0) CSR_mstatus_mie (clock, reset, csr_mstatus_mie_next, csr_mstatus_
 assign csr_mstatus_mie_next = csr_mstatus_mie_hwwen ? csr_mstatus_mie_hwdata : csr_wdata[3];
 assign csr_mstatus_mie_hwdata = mret ? csr_mstatus_mpie : 0;
 assign csr_mstatus_mie_wen = (csr_mstatus_sel & |csr_wfunc[1:0]) | csr_mstatus_mie_hwwen;
-assign csr_mstatus_mie_hwwen = exception | mret;
+assign csr_mstatus_mie_hwwen = (exception | mret) & flow_i;
 
 wire csr_mstatus_mpie, csr_mstatus_mpie_next, csr_mstatus_mpie_hwdata; // mpie
 wire csr_mstatus_mpie_wen, csr_mstatus_mpie_hwwen;
 Reg #(1, 1'b0) CSR_mstatus_mpie (clock, reset, csr_mstatus_mpie_next, csr_mstatus_mpie, csr_mstatus_mpie_wen);
 assign csr_mstatus_mpie_next = csr_mstatus_mpie_hwwen ? csr_mstatus_mpie_hwdata : csr_wdata[7];
-assign csr_mstatus_mpie_hwdata = csr_mstatus_mie;
+assign csr_mstatus_mpie_hwdata = csr_mstatus_mie & flow_i;
 assign csr_mstatus_mpie_wen = (csr_mstatus_sel & |csr_wfunc[1:0]) | csr_mstatus_mpie_hwwen;
 assign csr_mstatus_mpie_hwwen = exception;
 
@@ -97,7 +100,7 @@ assign csr_mcause_wen = (csr_mcause_sel & |csr_wfunc[1:0]) | csr_mcause_wen_hw;
 assign csr_mcause_wen_hw = exception;
 
 wire [DATA_WIDTH-1:0] csr_mip;//mip:0x344
-wire csr_mip_wen, csr_mip_sel;
+wire csr_mip_sel;
 wire csr_mip_meip, csr_mip_mtip;
 Reg #(1, 1'b0) CSR_mip_meip (clock, reset, eirp_i, csr_mip_meip, 1'b1);
 Reg #(1, 1'b0) CSR_mip_mtip (clock, reset, tirp_i, csr_mip_mtip, 1'b1);

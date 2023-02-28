@@ -20,6 +20,8 @@ int main(int argc, char** argv, char** env) {
 
   sdb_mainloop();
 
+  statistic();
+
   exit_Verilated();
 
   return !get_trap_flag();

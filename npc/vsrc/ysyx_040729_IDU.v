@@ -43,6 +43,7 @@ module ysyx_040729_IDU #(
   output csr_enable_o,
   output [2:0] rf_wdata_src_o,
   output [DATA_WIDTH-1:0] immediate_o,
+  output [ADDR_WIDTH-1:0] npc,
   output [ADDR_WIDTH-1:0] pc_next_o
 );
 
@@ -82,8 +83,6 @@ assign rf_raddr2  = instruction_i[24:20];
 assign rf_waddr_o = instruction_i[11:7];
 
 //forward
-wire [REG_ADDR_W-1:0] src1_addr    = instruction_i[19:15];
-wire [REG_ADDR_W-1:0] src2_addr    = instruction_i[24:20];
 wire                  rf_we_exe    = rf_we_exe_i;
 wire                  rf_we_mem    = rf_we_mem_i;
 wire [REG_ADDR_W-1:0] dst_addr_exe = dst_addr_exe_i;
@@ -110,7 +109,7 @@ assign mem_hazard_o = (rf_wdata_src_mem_i==3'b001 | rf_wdata_src_exe_i==3'b001) 
                       (src1_forward_mem | src2_forward_mem | src1_forward_exe | src2_forward_exe);
 
 //npc
-wire [DATA_WIDTH-1:0] npc, snpc, dnpc, rnpc, bnpc;
+wire [DATA_WIDTH-1:0] snpc, dnpc, rnpc, bnpc;
 wire branch_switch;
 wire [DATA_WIDTH:0] sub_result = rf_rdata1_o - rf_rdata2_o;
 MuxKey #(6, 3, 1) mux_branch (
