@@ -54,7 +54,7 @@ if HAS_KEYBOARD
 config I8042_DATA_PORT
   depends on HAS_PORT_IO
   hex "Port address of the keyboard controller"
-  default 0x60
+  default 0xa0
 
 config I8042_DATA_MMIO
   hex "MMIO address of the keyboard controller"
