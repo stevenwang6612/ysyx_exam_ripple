@@ -69,7 +69,7 @@ int free_wp(char *args){
   WP *temp_pre = NULL;
   WP *temp_free = free_;
   WP *temp_free_pre = NULL;
-  int free_no;
+  int free_no=0;
   //move temp from head to the node need to free
   if(head == NULL){
     return -1;
