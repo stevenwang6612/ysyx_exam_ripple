@@ -19,8 +19,7 @@ VERILATOR_CFLAGS +=  --waiver-output $(WAIVER)
 ARGS = -l $(LOG_FILE) 
 
 # project source
-VSRCS = $(shell find ~/common/rtl -name "*.v")
-VSRCS += $(shell find $(abspath ./vsrc) -name "*.v")
+VSRCS = $(shell find $(abspath ./vsrc) -name "*.v")
 CSRCS = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cpp")
 
 # rules for verilator
