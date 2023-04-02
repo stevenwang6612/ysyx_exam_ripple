@@ -21,7 +21,7 @@ DIFF_SPIKE_SO = $(NEMU_HOME)/tools/spike-diff/build/riscv64-spike-so
 DIFF_NEMU_SO = $(NEMU_HOME)/riscv64-nemu-interpreter-so
 LOGFLAGS = -l $(shell dirname $(IMAGE).elf)/npc-log.txt
 WAVFLAGS = -w$(shell dirname $(IMAGE).elf)/wave.vcd
-DIFFFLAGS = -d $(DIFF_SPIKE_SO)
+DIFFFLAGS = -d $(DIFF_NEMU_SO)
 
 image: $(IMAGE).elf
 	@$(OBJDUMP) -d $(IMAGE).elf > $(IMAGE).txt -M no-aliases
