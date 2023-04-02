@@ -41,7 +41,7 @@ int new_wp(char *args){
     head = free_;
     free_ = free_ -> next;
     head->next = NULL;
-    strncpy(head->expr_str, args, 32);
+    strncpy(head->expr_str, args, 31);
     head->value = value;
     return head->NO;
   }else{
@@ -57,7 +57,7 @@ int new_wp(char *args){
     temp_pre = temp_pre -> next;
     free_ = free_ -> next;
     temp_pre->next = temp;
-    strncpy(temp_pre->expr_str, args, 32);
+    strncpy(temp_pre->expr_str, args, 31);
     temp_pre->value = value;
     return temp_pre->NO;
   }
